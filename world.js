@@ -249,9 +249,6 @@ function buildOutdoor() {
   // ferme : grange + enclos
   m.statics.push({ kind: 'bld', img: Sp.building(7, { kind: 'house', wall: '#b8503f', roof: '#7a2f2a', door: '#e8dcc0' }), x: 8 * T - 1, y: 75 * T - 1, sortY: 80 * T });
   rectSolid(m, 8, 77, 7, 3, 1); placed.push({ x: 7, y: 75, w: 9, h: 6 });
-  for (let x = farm.x; x < farm.x + farm.w; x++) {
-    if (x < 26 || x > 27) { Sp.prop(null, 'fence', 0, 0); }
-  }
   // décors statiques dessinés dans le fond plus tard : liste
   const decor = [];
   for (let x = farm.x; x < farm.x + farm.w; x++) {
