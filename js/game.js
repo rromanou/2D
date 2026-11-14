@@ -289,17 +289,9 @@ function drawPerson(e, isPlayer) {
   }
 }
 function drawHeld(x, y, dir) {
-  const it = D.ITEMS[S.equip.weapon]; if (!it) return;
-  const k = it.w, hx = { down: 6, up: -6, left: -7, right: 7 }[dir] || 6, hy = -12, R = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + hx + a, y + hy + b, w, h); };
-  const vert = dir === 'down' || dir === 'up', sg = dir === 'left' || dir === 'up' ? -1 : 1;
-  if (k === 'knife') {
-    if (vert) { R(0, sg > 0 ? 0 : -5, 1, 5, '#e8eef4'); R(0, sg > 0 ? 5 : 0, 1, 1, '#6a4a2a'); R(-1, sg > 0 ? 0 : -1, 3, 1, '#222'); }
-    else { R(sg > 0 ? 0 : -5, 0, 5, 1, '#e8eef4'); R(sg > 0 ? -1 : 5, 0, 1, 1, '#6a4a2a'); }
-  } else {
-    const c = k === 'shotgun' ? '#5a3a1a' : '#33363e', len = k === 'shotgun' ? 8 : 5;
-    if (vert) { R(0, sg > 0 ? 0 : -len, 2, len, c); R(0, sg > 0 ? 0 : -len, 1, len, '#6a707c'); }
-    else { R(sg > 0 ? 0 : -len, 0, len, 2, c); R(sg > 0 ? 0 : -len, 0, len, 1, '#6a707c'); }
-  }
+  const id = S.equip.weapon, it = D.ITEMS[id]; if (!it) return;
+  const ic = RG.Icons.canvas(id), hx = { down: 5, up: -5, left: -13, right: -5 }[dir] || 5;
+  ctx.drawImage(ic, x + hx - 1, y - 24);
 }
 function drawAnimal(e) {
   const sz = Sp.animalSize[e.atype];
