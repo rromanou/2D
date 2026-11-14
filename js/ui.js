@@ -52,7 +52,7 @@ UI.hud = S => {
   el.stars.innerHTML = st; el.stars.style.visibility = S.wanted > 0 ? 'visible' : 'hidden';
   let eq = ''; if (S.equip.weapon) { const it = D.ITEMS[S.equip.weapon]; eq = it.n; if (it.k === 'weapon' && it.w !== 'knife') eq += ' (' + (S.inv.balles || 0) + ')'; }
   if (S.equip.mask) eq += (eq ? ' + ' : '') + 'Cagoule';
-  el.equip.textContent = eq; el.equip.style.display = eq ? 'block' : 'none';
+  el.equip.innerHTML = (S.equip.weapon ? RG.Icons.img(S.equip.weapon, 'ic') + ' ' : '') + esc(eq); el.equip.style.display = eq ? 'block' : 'none';
   UI.hotbar(S);
 };
 
