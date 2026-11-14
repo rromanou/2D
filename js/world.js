@@ -31,7 +31,7 @@ function rectSolid(m, x, y, w, h, v) { for (let j = y; j < y + h; j++) for (let 
 const INT = {
   super: { title: 'Supermarché', w: 16, h: 11, floor: 'tile', wall: '#dfe9d8',
     props: [{ k: 'shelf', x: 2, y: 2, w: 3 }, { k: 'shelf', x: 6, y: 2, w: 3 }, { k: 'shelf', x: 10, y: 2, w: 3 }, { k: 'shelf', x: 3, y: 5, w: 3 }, { k: 'shelf', x: 8, y: 5, w: 3 }, { k: 'shelf', x: 12, y: 5, w: 2 },
-      { k: 'counter', x: 10, y: 8, w: 4 }, { k: 'register', x: 12, y: 8, w: 1, flat: 1 }, { k: 'plant', x: 14, y: 2 }, { k: 'poster', x: 1, y: 0, o: { col: '#e8a93b' } }, { k: 'poster', x: 14, y: 0, o: { col: '#4b78c8' } }],
+      { k: 'counter', x: 10, y: 8, w: 4 }, { k: 'register', x: 12, y: 8, w: 1 }, { k: 'plant', x: 14, y: 2 }, { k: 'poster', x: 1, y: 0, o: { col: '#e8a93b' } }, { k: 'poster', x: 14, y: 0, o: { col: '#4b78c8' } }],
     npcs: [{ id: 'marcel', x: 11, y: 7, dir: 'down' }],
     zones: [{ x: 12, y: 9, w: 2, h: 1, action: 'cashier', label: 'Travailler à la caisse' }], wander: 2 },
   cafe: { title: 'Café Chez Mimi', w: 12, h: 9, floor: 'wood', wall: '#f0d8c4',
@@ -76,7 +76,7 @@ const INT = {
   casino: { title: 'Casino', w: 28, h: 18, floor: 'carpet', floorC: '#6a2442', wall: '#2b1b3a', big: true,
     props: [
       { k: 'slot', x: 3, y: 2, o: { col: '#c8503f' } }, { k: 'slot', x: 4, y: 2, o: { col: '#4b78c8' } }, { k: 'slot', x: 5, y: 2, o: { col: '#6fbf5a' } }, { k: 'slot', x: 6, y: 2, o: { col: '#e8a93b' } }, { k: 'slot', x: 7, y: 2, o: { col: '#8a63c9' } },
-      { k: 'counter', x: 21, y: 3, w: 5, o: { top: '#3b2a24', front: '#241814' } }, { k: 'shelf', x: 21, y: 2, w: 5, flat2: 1 },
+      { k: 'counter', x: 21, y: 3, w: 5, o: { top: '#3b2a24', front: '#241814' } },
       { k: 'roulette', x: 3, y: 7, w: 4, h: 3 }, { k: 'bjtable', x: 10, y: 7, w: 4, h: 3 }, { k: 'pokertable', x: 18, y: 7, w: 5, h: 3 },
       { k: 'neon', x: 10, y: 0, w: 4, o: { col: '#ff4fa0' } }, { k: 'neon', x: 15, y: 0, w: 4, o: { col: '#4fd8ff' } }, { k: 'neon', x: 3, y: 0, w: 5, o: { col: '#ffd54f' } },
       { k: 'plant', x: 1, y: 2 }, { k: 'plant', x: 26, y: 2 }, { k: 'plant', x: 1, y: 15 }, { k: 'plant', x: 26, y: 15 },
@@ -268,6 +268,7 @@ function buildOutdoor() {
     for (let x = 6; x < 124; x += 8) {
       if ((x >= 29 && x <= 32) || (x >= 61 && x <= 64) || (x >= 93 && x <= 96)) continue;
       if (ly === 44 && x >= 55 && x <= 70) continue;
+      if (m.doors.some(d => Math.abs(d.x - x) <= 2 && d.y >= ly - 3 && d.y <= ly + 3)) continue;
       decor.push({ k: 'lamp', x, y: ly }); m.solid[gi(m, x, ly)] = 1;
       m.lights.push({ x: x * T + 8, y: ly * T + 4, r: 42, c: '#ffe9a0' });
     }
@@ -334,7 +335,7 @@ function buildOutdoor() {
       R(c, x, y, T, T, '#6b6f78');
       for (let i = 0; i < 3; i++) R(c, x + Math.floor(U.hash(tx, ty, i + 60) * 14), y + Math.floor(U.hash(tx, ty, i + 61) * 15), 2, 1, '#62666f');
       const horiz = ty === 24 || ty === 46 || ty === 68, vert = tx === 30 || tx === 62 || tx === 94;
-      if (horiz && ty < MH && gAt(tx, ty + 1) === RD && (tx & 1) === 0) R(c, x, y + 15, 8, 2 > 1 ? 1 : 1, '#e8d77a');
+      if (horiz && ty < MH && gAt(tx, ty + 1) === RD && (tx & 1) === 0) R(c, x, y + 15, 8, 1, '#e8d77a');
       if (vert && gAt(tx + 1, ty) === RD && (ty & 1) === 0) R(c, x + 15, y, 1, 8, '#e8d77a');
       if (gAt(tx, ty - 1) === G || gAt(tx, ty - 1) === PV) R(c, x, y, T, 1, '#8d9199');
       if (gAt(tx, ty + 1) === G || gAt(tx, ty + 1) === PV) R(c, x, y + 15, T, 1, '#8d9199');
