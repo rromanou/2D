@@ -3,183 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#2f6b3a">
-<title>Petit village</title>
+<title>Petit Village</title>
 <link rel="stylesheet" href="style.css">
-<style>
-  #status {
-    position: fixed;
-    z-index: 5;
-    top: 12px;
-    left: 12px;
-    padding: 10px 12px;
-    color: #fffbe8;
-    background: rgba(35, 35, 42, .82);
-    border: 1px solid rgba(255,255,255,.35);
-    border-radius: 8px;
-    font: 13px/1.4 "Trebuchet MS", Verdana, sans-serif;
-    pointer-events: none;
-    min-width: 190px;
-  }
-  #status-top { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-  #h-stars { color: #ffcf55; letter-spacing: 2px; }
-  #h-stars i { display: inline-block; width: 8px; height: 8px; margin-left: 2px; border: 1px solid #ffcf55; border-radius: 50%; }
-  #h-stars i.on { background: #ffcf55; }
-  #h-equip { margin-top: 3px; color: #f5d89a; }
-  #needs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; margin-top: 7px; }
-  .meter { display: flex; align-items: center; gap: 5px; }
-  .meter-label { width: 42px; }
-  .meter-track { flex: 1; height: 7px; overflow: hidden; background: #45454b; border-radius: 5px; }
-  .meter-track > div { height: 100%; background: #78c76d; }
-  .meter.low .meter-track > div { background: #ed665e; }
-  #mini {
-    position: fixed;
-    z-index: 4;
-    top: 12px;
-    right: 12px;
-    display: none;
-    width: 192px;
-    height: 144px;
-    image-rendering: pixelated;
-    border: 2px solid #f3e4c2;
-    border-radius: 5px;
-    background: rgba(30,30,35,.75);
-  }
-  #banner, #prompt, #toasts, #dialog, #modal, #title { position: fixed; z-index: 8; }
-  #banner {
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 7px 14px;
-    color: #fffbe8;
-    background: rgba(45,35,28,.88);
-    border-radius: 7px;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-  }
-  #banner.on { opacity: 1; }
-  #banner span { display: block; font-size: 12px; }
-  #prompt {
-    display: none;
-    bottom: 58px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 6px 10px;
-    color: #fffbe8;
-    background: rgba(35,35,42,.88);
-    border-radius: 6px;
-    pointer-events: none;
-  }
-  #toasts { top: 170px; right: 12px; display: flex; flex-direction: column; gap: 6px; }
-  .toast { padding: 8px 11px; color: #fff; background: rgba(35,35,42,.92); border-radius: 6px; }
-  .toast.err { background: rgba(130,45,40,.95); }
-  .toast.ok { background: rgba(43,105,55,.95); }
-  .toast.out { opacity: 0; }
-  #dialog {
-    display: none;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
-    width: min(680px, calc(100vw - 32px));
-    box-sizing: border-box;
-    padding: 12px 16px;
-    color: #fffbe8;
-    background: rgba(42,35,31,.96);
-    border: 2px solid #f3e4c2;
-    border-radius: 10px;
-  }
-  #dialog.on { display: block; }
-  .dn { margin-bottom: 6px; color: #ffd98b; font-weight: bold; }
-  .dt { min-height: 2.8em; }
-  .dc { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-  .dh { margin-top: 8px; text-align: right; opacity: .7; font-size: 11px; }
-  #modal, #title {
-    display: none;
-    inset: 0;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
-    background: rgba(8,10,14,.72);
-  }
-  #modal.on, #title.on { display: flex; }
-  .panel, .tbox {
-    width: min(680px, 100%);
-    max-height: min(85vh, 760px);
-    overflow: auto;
-    padding: 16px;
-    color: #29251f;
-    background: #fff8e8;
-    border: 3px solid #9b7546;
-    border-radius: 12px;
-    box-sizing: border-box;
-  }
-  .ph { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: bold; font-size: 18px; }
-  .pb { margin-top: 12px; }
-  .tbox { text-align: center; }
-  .tbox h1 { margin: 0 0 8px; }
-  .menu, .brow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
-  button, input { font: inherit; }
-  button {
-    padding: 7px 11px;
-    color: #29251f;
-    background: #f0d8a7;
-    border: 1px solid #9b7546;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  button:hover { background: #e7c783; }
-  input { max-width: 100%; padding: 7px; border: 1px solid #9b7546; border-radius: 5px; }
-  @media (max-width: 600px) {
-    #status { top: 6px; left: 6px; min-width: 150px; padding: 7px; font-size: 11px; }
-    #mini { top: auto; right: 6px; bottom: 6px; width: 128px; height: 96px; }
-    #toasts { top: 145px; right: 6px; }
-    #hud { left: 6px; bottom: 6px; max-width: 55vw; font-size: 10px; }
-  }
-</style>
 </head>
 <body>
-<canvas id="game" aria-label="Carte du jeu Petit village"></canvas>
-
-<section id="status" aria-label="État du personnage">
-  <div id="status-top">
-    <span>Argent : <strong id="h-money">0 $</strong></span>
-    <span id="h-time">Jour 1 - 08:00</span>
+<canvas id="game"></canvas>
+<div id="ui">
+  <div id="hud" class="pix">
+    <div class="row1"><span id="h-money">0 $</span><span id="h-time"></span></div>
+    <div class="bars">
+      <div class="bar" title="Faim"><label>Faim</label><div class="track"><div id="b-hunger" class="fill f-hunger"></div></div></div>
+      <div class="bar" title="Soif"><label>Soif</label><div class="track"><div id="b-thirst" class="fill f-thirst"></div></div></div>
+      <div class="bar" title="Santé"><label>Santé</label><div class="track"><div id="b-hp" class="fill f-hp"></div></div></div>
+      <div class="bar" title="Endurance"><label>Endur.</label><div class="track"><div id="b-stam" class="fill f-stam"></div></div></div>
+    </div>
+    <div id="h-job"></div>
+    <div id="h-stars"></div>
+    <div id="h-equip"></div>
   </div>
-  <div>Emploi : <span id="h-job">Sans emploi</span></div>
-  <div id="h-stars" aria-label="Recherche par la police"></div>
-  <div id="h-equip"></div>
-  <div id="needs">
-    <div class="meter"><span class="meter-label">Faim</span><div class="meter-track"><div id="b-hunger" style="width:85%"></div></div></div>
-    <div class="meter"><span class="meter-label">Soif</span><div class="meter-track"><div id="b-thirst" style="width:85%"></div></div></div>
-    <div class="meter"><span class="meter-label">Santé</span><div class="meter-track"><div id="b-hp" style="width:100%"></div></div></div>
-    <div class="meter"><span class="meter-label">Énergie</span><div class="meter-track"><div id="b-stam" style="width:100%"></div></div></div>
+  <div id="topbtns">
+    <button class="btn" id="btn-bag">Sac [I]</button>
+    <button class="btn" id="btn-quest">Quêtes [J]</button>
+    <button class="btn" id="btn-menu">Menu</button>
   </div>
-</section>
-
-<canvas id="mini" width="128" height="96" aria-label="Minicarte"></canvas>
-<div id="banner" role="status" aria-live="polite"></div>
-<div id="prompt"></div>
-<div id="toasts" aria-live="polite"></div>
-<div id="dialog" role="dialog" aria-live="polite"></div>
-<div id="modal" role="dialog" aria-modal="true"></div>
-<div id="title"></div>
-
-<div id="hud">ZQSD / flèches : se déplacer &nbsp;|&nbsp; Maj : courir &nbsp;|&nbsp; Tactile : maintenir pour avancer</div>
-
-<!-- Les fichiers sont chargés dans l'ordre de leurs dépendances. -->
-<script src="util.js?v=20261114-2"></script>
-<script src="data.js?v=20261114-2"></script>
-<script src="sprites.js?v=20261114-2"></script>
-<script src="world.js?v=20261114-2"></script>
-<script src="ents.js?v=20261114-2"></script>
-<script src="ui.js?v=20261114-2"></script>
-<script src="game.js?v=20261114-2"></script>
-<script src="actions.js?v=20261114-2"></script>
-<script src="casino.js?v=20261114-2"></script>
+  <canvas id="mini" width="128" height="96"></canvas>
+  <div id="hotbar"></div>
+  <div id="prompt"></div>
+  <div id="toasts"></div>
+  <div id="banner"></div>
+  <div id="dialog"></div>
+  <div id="modal"></div>
+  <div id="title"></div>
+</div>
+<script src="js/fontdata.js"></script>
+<script src="js/util.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/data.js"></script>
+<script src="js/world.js"></script>
+<script src="js/ents.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/casino.js"></script>
+<script src="js/casinoui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/actions.js"></script>
 <script>
-  window.RG.Game.boot();
+(function () {
+  var ff = new FontFace('Pixel', 'url(data:font/ttf;base64,' + RG.fontB64 + ')');
+  document.fonts.add(ff);
+  ff.load().then(function () { document.body.classList.add('ready'); RG.Game.boot(); })
+    .catch(function () { document.body.classList.add('ready'); RG.Game.boot(); });
+})();
 </script>
 </body>
 </html>
