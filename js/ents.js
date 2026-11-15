@@ -88,7 +88,7 @@ E.spawnWander = (m, tx, ty, r, rnd) => {
   const free = D.FIRST.filter(n => !E.used.has(n)), nm = free.length ? free[Math.floor(rnd() * free.length)] : U.pick(D.FIRST, rnd);
   E.used.add(nm);
   const e = E.make('npc', { name: nm, ptype: types[Math.floor(rnd() * types.length)], ap: E.apFor(nm), female: E.FEM.has(nm), x: tx * T + 8, y: ty * T + 12,
-    home: { x: tx * T + 8, y: ty * T + 12, r: r * T }, spd: 16 + rnd() * 12, t: rnd() * 3, money: 20 + Math.floor(rnd() * 80), gender: rnd() });
+    home: { x: tx * T + 8, y: ty * T + 12, r: r * T }, spd: 16 + rnd() * 12, t: rnd() * 3, money: Math.floor(Math.pow(rnd(), 2.3) * 1500) + 3, hp: 40, gender: rnd() });
   m.ents.push(e); return e;
 };
 E.spawnCop = (m, tx, ty, patrol) => {
@@ -192,8 +192,21 @@ E.update = (m, dt, P) => {
     switch (e.kind) {
       case 'static': if (e.talk > 0) e.talk -= dt; break;
       case 'npc': {
+        if (e.wait) { e.anim = 0; if (e.talk > 0) { e.talk -= dt; E.faceTo(e, P.x, P.y); } break; }
         if (e.talk > 0) { e.talk -= dt; E.faceTo(e, P.x, P.y); break; }
         const d = Math.hypot(P.x - e.x, P.y - e.y);
+        if (e.fight) {
+          const dx = P.x - e.x, dy = P.y - e.y, l = d || 1, sp = 50 * dt;
+          if (d > 13) { if (!E.move(e, m, dx / l * sp, dy / l * sp)) { if (!E.move(e, m, dx / l * sp, 0)) E.move(e, m, 0, dy / l * sp); } e.anim += dt * 10; }
+          else { e.anim = 0; e.atk = (e.atk || 0) - dt; if (e.atk <= 0) { e.atk = 1.1; if (RG.Game.npcAttack) RG.Game.npcAttack(e); } }
+          faceVec(e, dx, dy); break;
+        }
+        if (e.follow) {
+          if (d > 260) { e.x = P.x - 10; e.y = P.y; break; }
+          if (d > 26) { const dx = P.x - e.x, dy = P.y - e.y, sp = (d > 80 ? 66 : 44) * dt; if (!E.move(e, m, dx / d * sp, dy / d * sp)) { if (!E.move(e, m, dx / d * sp, 0)) E.move(e, m, 0, dy / d * sp); } faceVec(e, dx, dy); e.anim += dt * 9; }
+          else e.anim = 0;
+          break;
+        }
         if (P.armed && d < 70 && !e.indoor) e.flee = Math.max(e.flee, 3);
         if (e.flee > 0) {
           e.flee -= dt;
