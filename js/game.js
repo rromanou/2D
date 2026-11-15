@@ -120,6 +120,7 @@ addEventListener('keydown', e => {
     case 'KeyI': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'inv') UI.closeModal(); } else if (!UI.dialogOpen()) UI.inventory(); break;
     case 'KeyJ': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'quests') UI.closeModal(); } else if (!UI.dialogOpen()) UI.quests(); break;
     case 'KeyR': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'rel') UI.closeModal(); } else if (!UI.dialogOpen()) RG.Life.friends(); break;
+    case 'KeyT': if (C.place) RG.Life.rotatePlace(); break;
     case 'KeyB': if (C.cur && C.cur.name === 'home' && !UI.isModal() && !UI.dialogOpen() && !C.place) RG.Life.build(); break;
     case 'KeyM': document.getElementById('mini').classList.toggle('big'); break;
     case 'Escape':
@@ -134,7 +135,8 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) { keys[k] = false; if (!typing(e)) e.preventDefault(); } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
-canvas.addEventListener('pointerdown', e => { if (C.place) { RG.Life.placeMove(Math.floor((e.clientX / scale + camX) / T), Math.floor((e.clientY / scale + camY) / T)); RG.Life.placeClick(); return; } ptr.on = true; ptr.x = e.clientX; ptr.y = e.clientY; });
+canvas.addEventListener('contextmenu', e => { if (C.place) { e.preventDefault(); RG.Life.rotatePlace(); } });
+canvas.addEventListener('pointerdown', e => { if (C.place) { if (e.button === 2) return; RG.Life.placeMove(Math.floor((e.clientX / scale + camX) / T), Math.floor((e.clientY / scale + camY) / T)); RG.Life.placeClick(); return; } ptr.on = true; ptr.x = e.clientX; ptr.y = e.clientY; });
 addEventListener('pointermove', e => { if (C.place) RG.Life.placeMove(Math.floor((e.clientX / scale + camX) / T), Math.floor((e.clientY / scale + camY) / T)); if (ptr.on) { ptr.x = e.clientX; ptr.y = e.clientY; } });
 addEventListener('pointerup', () => { ptr.on = false; });
 addEventListener('pointercancel', () => { ptr.on = false; });
@@ -281,25 +283,35 @@ function drawHeart(x, y) { ctx.fillStyle = '#ff5a7a'; HEART.forEach((r, j) => { 
 function nameTag(text, x, y, col) { U.drawText(ctx, text, Math.round(x - U.textW(U.norm(text)) / 2), Math.round(y), col || '#fffbe8', '#3a261c'); }
 
 function drawPerson(e, isPlayer) {
-  const ap = isPlayer ? S.ap : e.ap;
+  let ap = isPlayer ? S.ap : e.ap;
+  if (isPlayer && S.muscle >= 25 && S.role !== 'x') { const t = S.muscle >= 60 ? 2 : 1; ap = Game._apm && Game._apm.src === ap && Game._apm.t === t ? Game._apm.ap : (Game._apm = { src: ap, t, ap: Object.assign({}, ap, { mus: t }) }).ap; }
   const fr = (isPlayer ? P.anim : e.anim) > 0 ? WALK[Math.floor(isPlayer ? P.anim : e.anim) % 4] : 0;
   const dir = isPlayer ? P.dir : e.dir;
   const spr = Sp.char(ap, dir, fr, isPlayer ? S.equip.mask : false);
   const x = Math.round(e.x), y = Math.round(e.y);
-  if (e.kid) { const k = e.kscale || (e.baby ? 0.5 : 0.7); ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
+  const pk = isPlayer && S.pscale && S.pscale < 1 ? S.pscale : 0;
+  if (e.kid || pk) { const k = pk || e.kscale || (e.baby ? 0.5 : 0.7); ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
   ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 2 - camY, 8, 1); ctx.fillRect(x - 6 - camX, y - 1 - camY, 12, 2); ctx.fillRect(x - 4 - camX, y + 1 - camY, 8, 1);
   if (e.stun > 0) {
     ctx.save(); ctx.translate(x - camX, y - camY - 2); ctx.rotate(Math.PI / 2); ctx.drawImage(spr, -16, -9); ctx.restore();
     U.drawText(ctx, 'ZZZ', x - 5 - camX, y - 14 - camY, '#cfeefa', '#000');
   } else {
+    const held = isPlayer ? (S.equip.weapon || S.equip.hand) : null;
+    if (held && dir === 'up') drawHeld(held, x - camX, y - camY, dir);
     ctx.drawImage(spr, x - 9 - camX, y - 31 - camY);
-    if (isPlayer && S.equip.weapon) drawHeld(x - camX, y - camY, dir);
+    if (held && dir !== 'up') drawHeld(held, x - camX, y - camY, dir);
   }
 }
-function drawHeld(x, y, dir) {
-  const id = S.equip.weapon, it = D.ITEMS[id]; if (!it) return;
-  const ic = RG.Icons.canvas(id), hx = { down: 5, up: -5, left: -13, right: -5 }[dir] || 5;
-  ctx.drawImage(ic, x + hx - 1, y - 24);
+function drawHeld(id, x, y, dir) {
+  const it = D.ITEMS[id]; if (!it) return;
+  const ic = RG.Icons.canvas(id), w = ic.width, h = ic.height;
+  const hx = dir === 'left' ? -7 : dir === 'right' ? 7 : dir === 'up' ? -6 : 6, hy = -13;
+  ctx.save(); ctx.translate(x + hx, y + hy);
+  if (dir === 'left') ctx.scale(-1, 1);
+  const gun = it.k === 'weapon';
+  if (gun) ctx.rotate(dir === 'down' ? 0.5 : dir === 'up' ? -0.5 : -0.3);
+  ctx.drawImage(ic, -Math.round(w / 2) + (gun ? 3 : 0), -h + 6);
+  ctx.restore();
 }
 function drawAnimal(e) {
   const sz = Sp.animalSize[e.atype];
