@@ -170,3 +170,11 @@ input:focus { outline: none; background: #fff; }
 .panel.rel { width: min(94vw, 760px); }
 .panel.build .row .fi { max-height: 64px; }
 #topbtns { flex-wrap: wrap; justify-content: flex-end; max-width: 60vw; }
+
+.f-pee { background-color: #d8c040; } .f-hyg { background-color: #4fc8e8; }
+#fam { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 6px; pointer-events: auto; z-index: 5; }
+#fam .pf { width: 44px; background: #f3e6c4; border: 3px solid #4a3426; box-shadow: 0 0 0 2px #2b1b14; cursor: pointer; text-align: center; font-size: 10px; padding: 2px 0 1px; image-rendering: pixelated; }
+#fam .pf:hover { background: #ffe9a8; } #fam .pf.on { background: #9fd88a; } #fam .pf canvas { width: 36px; height: 36px; display: block; margin: 0 auto; image-rendering: pixelated; }
+#fam .pf small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; }
+.kbars .kb { display: flex; align-items: center; gap: 6px; margin: 2px 0; } .kbars .kb label { width: 96px; } .kbars .kb .track { flex: 1; height: 10px; background: #2b1b14; } .kbars .kb .fill { height: 100%; }
+.cash .big { font-size: 20px; margin: 6px 0; } .cash .brow button { min-width: 80px; }
