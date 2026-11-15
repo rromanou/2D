@@ -190,7 +190,7 @@ D.NPCS = {
 /* ------------------------------------------------------------------ */
 /*  Bots qui se promènent                                              */
 /* ------------------------------------------------------------------ */
-D.FIRST = ['Alice', 'Bastien', 'Camille', 'Dominique', 'Élodie', 'Félix', 'Gabrielle', 'Hugo', 'Isabelle', 'Jules', 'Karine', 'Louis', 'Mélanie', 'Nicolas', 'Océane', 'Philippe', 'Rosalie', 'Samuel', 'Thérèse', 'Vincent', 'Xavier', 'Yvette', 'Zacharie', 'Amélie', 'Benoît', 'Cécile', 'Damien', 'Émilie', 'Francis', 'Geneviève', 'Henri', 'Jade', 'Kevin', 'Léa', 'Maxime', 'Noémie', 'Olivier', 'Pascale', 'Rémi', 'Sandrine'];
+D.FIRST = ['Alice', 'Bastien', 'Camille', 'Dominique', 'Élodie', 'Félix', 'Gabrielle', 'Hugo', 'Isabelle', 'Jules', 'Karine', 'Louis', 'Mélanie', 'Nicolas', 'Océane', 'Philippe', 'Rosalie', 'Samuel', 'Thérèse', 'Vincent', 'Xavier', 'Yvette', 'Zacharie', 'Amélie', 'Benoît', 'Cécile', 'Damien', 'Émilie', 'Francis', 'Geneviève', 'Henri', 'Jade', 'Kevin', 'Léa', 'Maxime', 'Noémie', 'Olivier', 'Pascale', 'Rémi', 'Sandrine', 'Audrey', 'Bruno', 'Chloé', 'Delphine', 'Étienne', 'Fabien', 'Gaëtan', 'Hélène', 'Ismaël', 'Julien', 'Kim', 'Laurent', 'Manon', 'Nadia', 'Octave', 'Patrick', 'Quentin', 'Roxane', 'Sylvain', 'Tania', 'Ulysse', 'Valérie', 'William', 'Yann', 'Zoé', 'Adrien', 'Béatrice', 'Cédric', 'Estelle', 'Gilles', 'Inès', 'Lucas', 'Mathis', 'Ophélie', 'Raphaël', 'Solange', 'Théo', 'Ursule', 'Yves'];
 D.GENERIC = [
   'Quelle belle journée au village !', 'Le supermarché fait des rabais sur les sandwichs, paraît-il.', 'Tu as déjà essayé le casino ? Moi, j\'y ai laissé ma chemise.',
   'Le ciel est dégagé, parfait pour une balade.', 'J\'ai entendu dire que le lac regorge de poissons.', 'Ce village est tranquille... trop, parfois.',
@@ -216,4 +216,97 @@ D.CTX = {
 };
 D.FLEE = ['Au secours !', 'Non, prenez tout !', 'Je vous en prie, ne me faites pas de mal !', 'Prends mon argent !'];
 D.COPLINES = ['Circulez, il n\'y a rien à voir.', 'Je garde l\'oeil ouvert, citoyen.', 'Restez à l\'écart des ennuis.', 'Ici la loi est respectée.'];
+
+/* ------------------------------------------------------------------ */
+/*  Vie sociale, maison, nouveaux commerces                            */
+/* ------------------------------------------------------------------ */
+Object.assign(D.ITEMS, {
+  popcorn:  { n: 'Popcorn',          k: 'food',  p: 5,  h: 14, t: -3, f: 6,  d: 'Salé et croustillant.' },
+  burger:   { n: 'Burger frites',    k: 'food',  p: 14, h: 60, t: 0,  f: 8,  d: 'Généreux.' },
+  steak:    { n: 'Steak-purée',      k: 'food',  p: 20, h: 75, t: 4,  f: 10, hp: 5, d: 'Le plat du chef.' },
+  gateau:   { n: 'Gâteau',           k: 'food',  p: 6,  h: 18, t: 0,  f: 12, d: 'Une part de bonheur.' },
+  brioche:  { n: 'Brioche',          k: 'food',  p: 4,  h: 18, t: 0,  f: 4,  d: 'Moelleuse.' },
+  biere:    { n: 'Bière',            k: 'drink', p: 6,  h: 0,  t: 16, f: 14, d: 'Pour se détendre.' },
+  cocktail: { n: 'Cocktail',         k: 'drink', p: 10, h: 0,  t: 20, f: 20, d: 'Fruité et festif.' },
+  platmaison:{ n: 'Plat maison',     k: 'food',  p: 0,  h: 65, t: 8,  f: 10, hp: 8, d: 'Cuisiné par toi.' },
+  fleurs:   { n: 'Bouquet de fleurs',k: 'gift',  p: 15, g: 8,  d: 'Un cadeau qui fait toujours plaisir.' },
+  chocolat: { n: 'Chocolats',        k: 'gift',  p: 10, g: 6,  d: 'Une boîte de chocolats fins.' },
+  peluche:  { n: 'Peluche',          k: 'gift',  p: 30, g: 12, d: 'Toute douce.' },
+  bijou:    { n: 'Collier',          k: 'gift',  p: 120, g: 24, d: 'Un joli collier.' },
+  bague:    { n: 'Bague de fiançailles', k: 'ring', p: 600, g: 0, d: 'Pour demander quelqu\'un en mariage.' }
+});
+['pomme', 'pain', 'croissant', 'sandwich', 'salade'].forEach(i => { D.ITEMS[i].f = D.ITEMS[i].f || 1; });
+Object.assign(D.SHOPS, {
+  bakery: { title: 'Boulangerie', items: ['pain', 'croissant', 'brioche', 'gateau', 'cafe', 'lait'] },
+  resto:  { title: 'Restaurant', items: ['burger', 'steak', 'pizza', 'salade', 'jus', 'soda', 'biere'] },
+  bar:    { title: 'Bar', items: ['biere', 'cocktail', 'soda', 'eau', 'popcorn'] },
+  gifts:  { title: 'Boutique cadeaux', items: ['fleurs', 'chocolat', 'peluche', 'bijou', 'bague'] },
+  cine:   { title: 'Comptoir du cinéma', items: ['popcorn', 'soda', 'eau'] }
+});
+D.SHOPS.super.items.push('fleurs');
+
+/* Meubles : w,h en cases, k = sprite, fn = fonction */
+D.FURN = {
+  bed:       { n: 'Lit',               p: 150,  w: 2, h: 2, k: 'bed', o: { col: '#6fa8dc' }, fn: 'sleep', d: 'Pour dormir et récupérer.' },
+  bedlux:    { n: 'Lit double luxe',   p: 700,  w: 2, h: 2, k: 'bed', o: { col: '#c8503f' }, fn: 'sleep', d: 'Sommeil de roi.' },
+  sofa:      { n: 'Canapé',            p: 120,  w: 2, h: 1, k: 'sofa', o: { col: '#8a63c9' }, fn: 'sofa', d: 'Détente et siestes.' },
+  sofa2:     { n: 'Canapé vert',       p: 160,  w: 3, h: 1, k: 'sofa', o: { col: '#4f9a5a' }, fn: 'sofa', d: 'Trois places.' },
+  tvset:     { n: 'Télévision',        p: 250,  w: 2, h: 1, k: 'tvset', fn: 'tv', d: 'Regarder des émissions.' },
+  console:   { n: 'Console de jeux',   p: 320,  w: 1, h: 1, k: 'console', fn: 'console', d: 'Jeux vidéo : grosse détente.' },
+  piano:     { n: 'Piano',             p: 900,  w: 2, h: 1, k: 'piano', fn: 'piano', d: 'Jouer de la musique.' },
+  bookshelf: { n: 'Bibliothèque',      p: 90,   w: 2, h: 1, k: 'bookshelf', fn: 'read', d: 'Lire un bon livre.' },
+  fridge:    { n: 'Réfrigérateur',     p: 200,  w: 1, h: 1, k: 'fridge', fn: 'fridge', d: 'Une collation à toute heure.' },
+  stove:     { n: 'Cuisinière',        p: 180,  w: 1, h: 1, k: 'stove', fn: 'cook', d: 'Cuisine avec des aliments du sac.' },
+  wardrobe:  { n: 'Garde-robe',        p: 110,  w: 1, h: 1, k: 'wardrobe', fn: 'mirror', d: 'Changer d\'apparence.' },
+  chest:     { n: 'Coffre',            p: 70,   w: 1, h: 1, k: 'chest', fn: 'stash', d: 'À l\'abri de la police.' },
+  treadmill: { n: 'Tapis de course',   p: 400,  w: 1, h: 1, k: 'treadmill', fn: 'gym', d: 'Garde la forme.' },
+  crib:      { n: 'Berceau',           p: 120,  w: 1, h: 1, k: 'crib', d: 'Pour bébé.' },
+  table:     { n: 'Table',             p: 60,   w: 2, h: 1, k: 'table', o: { cloth: '#fff7e6' }, d: 'Décoration.' },
+  chair:     { n: 'Chaise',            p: 25,   w: 1, h: 1, k: 'chair', d: 'Décoration.' },
+  desk:      { n: 'Bureau',            p: 80,   w: 2, h: 1, k: 'desk', d: 'Décoration.' },
+  plant:     { n: 'Plante',            p: 20,   w: 1, h: 1, k: 'plant', d: 'Décoration.' },
+  floorlamp: { n: 'Lampe',             p: 30,   w: 1, h: 1, k: 'floorlamp', d: 'Décoration.' },
+  rug1:      { n: 'Tapis bleu',        p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#6fa8dc' }, flat: 1, d: 'Au sol.' },
+  rug2:      { n: 'Tapis rouge',       p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#c8503f' }, flat: 1, d: 'Au sol.' },
+  rug3:      { n: 'Tapis vert',        p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#4f9a5a' }, flat: 1, d: 'Au sol.' }
+};
+D.HOME_SIZES = [
+  { id: 0, n: 'Appartement', w: 10, h: 8, p: 0 },
+  { id: 1, n: 'Maison',      w: 14, h: 10, p: 3000 },
+  { id: 2, n: 'Villa',       w: 18, h: 12, p: 9000 }
+];
+D.WALLS = ['#f0e0d0', '#dfe8d0', '#d8e8f0', '#f0d8d0', '#e6dcee', '#f4eec0', '#c8d0c0', '#3a3440'];
+D.FLOORS = [{ id: 'wood', n: 'Parquet' }, { id: 'tile', n: 'Carrelage' }, { id: 'carpet', n: 'Moquette bleue', c: '#6f8fc2' }, { id: 'carpet', n: 'Moquette rouge', c: '#a8505a' }, { id: 'dark', n: 'Béton' }];
+D.DEFAULT_FURN = [
+  { id: 'bed', x: 1, y: 2 }, { id: 'tvset', x: 4, y: 2 }, { id: 'sofa', x: 4, y: 3 }, { id: 'chest', x: 8, y: 2 }, { id: 'wardrobe', x: 6, y: 2 }, { id: 'plant', x: 8, y: 5 }, { id: 'rug1', x: 3, y: 5 }
+];
+
+Object.assign(D.NPCS, {
+  clara:   { name: 'Clara', role: 'Caissière du cinéma', ap: A('#f7cfa5', '#2b1b14', 2, '#c8403a', '#2b2b33', 0, 0),
+    intro: ['Bienvenue au cinéma ! Une place coûte 12 $, et le popcorn est au comptoir.'], lines: ['Prends place dans la salle, le film va commencer.', 'Rien de tel qu\'un bon film pour se détendre.'], menu: ['shop:cine'] },
+  bruno:   { name: 'Bruno', role: 'Chef cuisinier', ap: A('#e5ae7e', '#2b1b14', 0, '#f2f2ee', '#3b3b44', 4, 0, '#f2f2ee'),
+    intro: ['Bienvenue chez moi ! Ici, tout est fait maison.'], lines: ['Le steak-purée, c\'est ma fierté.', 'On mange mieux quand on prend son temps.'], menu: ['shop:resto'], robbable: { min: 100, max: 300, heat: 2, need: 1, cd: 420, name: 'le restaurant' } },
+  odile:   { name: 'Odile', role: 'Bibliothécaire', ap: A('#fde0c5', '#8a8a95', 3, '#8a63c9', '#4a4a55', 0, 1),
+    intro: ['Chut... Bienvenue à la bibliothèque. Les livres sont à tout le monde.'], lines: ['Lire détend l\'esprit.', 'Il y a des histoires pour tous les goûts.'] },
+  hector:  { name: 'Hector', role: 'Coach sportif', ap: A('#c98e5f', '#2b1b14', 5, '#e8a93b', '#2b2b33', 0, 0),
+    intro: ['Salle de sport ! Chaque séance coûte 5 $, mais tu seras plus endurant.'], lines: ['Plus tu t\'entraînes, moins tu te fatigues en courant.', 'Un esprit sain dans un corps sain !'] },
+  fanny:   { name: 'Fanny', role: 'Vendeuse de meubles', ap: A('#f7cfa5', '#c94b32', 1, '#3fa9a0', '#3b3b44', 0, 0),
+    intro: ['Bienvenue chez Meubles & Cie ! Rends ta maison unique.'], lines: ['Tout ce que tu achètes se pose chez toi avec le mode Aménager.', 'Un piano dans le salon, ça change tout.'], menu: ['furn'] },
+  gisele:  { name: 'Gisèle', role: 'Fleuriste', ap: A('#fde0c5', '#ebe4cf', 3, '#f48fb1', '#6a4a8a', 0, 0),
+    intro: ['Bonjour ! Un cadeau, ça rapproche les gens.'], lines: ['Les fleurs, c\'est toujours un succès.', 'Pour une demande en mariage, prends la bague.'], menu: ['shop:gifts'] },
+  docteur: { name: 'Dr Lemieux', role: 'Médecin', ap: A('#e5ae7e', '#6a4126', 0, '#f2f2ee', '#4a7a9a', 0, 1),
+    intro: ['Clinique du village. Que puis-je pour vous ?'], lines: ['Mangez, buvez et dormez : la meilleure médecine.'], menu: ['heal'] },
+  alex:    { name: 'Alex', role: 'Gérant de l\'arcade', ap: A('#fde0c5', '#2b1b14', 4, '#4b78c8', '#2b2b33', 0, 0),
+    intro: ['Arcade ! Deux dollars la partie. Gagne des prix si tu es doué.'], lines: ['Mon record, c\'est trois mille points.', 'Jouer, c\'est la meilleure détente.'] },
+  mario:   { name: 'Mario', role: 'Barman', ap: A('#e5ae7e', '#2b1b14', 0, '#8b4a5a', '#15151c', 0, 0),
+    intro: ['Bienvenue au bar ! Qu\'est-ce que je te sers ?'], lines: ['Un cocktail et la soirée est lancée.', 'Il y a de la musique à la piste de danse.'], menu: ['shop:bar'] },
+  boulanger:{ name: 'Rosalie', role: 'Boulangère', ap: A('#f7cfa5', '#6a4126', 1, '#f2f2ee', '#c8a070', 0, 0),
+    intro: ['Bonjour ! Le pain sort du four.'], lines: ['Mes croissants partent toujours en premier.', 'Un gâteau pour une occasion spéciale ?'], menu: ['shop:bakery'] }
+});
+D.SOCIAL = {
+  chat: ['Tu as vu le temps qu\'il fait ?', 'Cette place est vraiment agréable.', 'Je prends l\'air un peu, ça fait du bien.', 'Il paraît qu\'il y a de bonnes choses au marché.', 'Tu viens souvent ici ?'],
+  perso: ['Ma famille vit loin d\'ici, elle me manque parfois.', 'J\'ai toujours rêvé de voyager.', 'Mon plat préféré ? Tout ce qui est fait avec amour.', 'Je me sens bien dans ce village.', 'J\'aime les gens sincères comme toi.'],
+  joke: ['Pourquoi les plongeurs plongent-ils toujours en arrière ? Parce que sinon ils tombent dans le bateau !', 'Je voulais te raconter une blague sur la boulangerie... mais elle est pas assez cuite.', 'Qu\'est-ce qui est jaune et qui attend ? Jonathan.'],
+  lovefail: ['Désolé... je te vois plutôt comme un ami.', 'C\'est gentil, mais je ne suis pas prêt(e) pour ça.', 'Hmm... laisse-moi un peu de temps.']
+};
 })();
