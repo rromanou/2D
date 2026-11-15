@@ -268,7 +268,7 @@ function buildOutdoor() {
     for (let x = 6; x < 124; x += 8) {
       if ((x >= 29 && x <= 32) || (x >= 61 && x <= 64) || (x >= 93 && x <= 96)) continue;
       if (ly === 44 && x >= 55 && x <= 70) continue;
-      if (m.doors.some(d => Math.abs(d.x - x) <= 2 && d.y >= ly - 3 && d.y <= ly + 3)) continue;
+      if (m.doors.some(d => Math.abs(d.x - x) <= 2 && d.y >= ly - 3 && d.y <= ly + 3) || m.houses.some(h => Math.abs(h.doorX - x) <= 2 && h.doorY >= ly - 3 && h.doorY <= ly + 3)) continue;
       decor.push({ k: 'lamp', x, y: ly }); m.solid[gi(m, x, ly)] = 1;
       m.lights.push({ x: x * T + 8, y: ly * T + 4, r: 42, c: '#ffe9a0' });
     }
