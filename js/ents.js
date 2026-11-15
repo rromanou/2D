@@ -70,12 +70,18 @@ Nav.step = (m, x, y) => {
 E.spawnStatic = (m, id, tx, ty, dir) => {
   const def = D.NPCS[id];
   const e = E.make('static', { id2: id, name: def.name, role: def.role, ap: def.ap, def, x: tx * T + 8, y: ty * T + 12, dir: dir || 'down', spd: 0 });
+  e.ap = Sp.randomAp(U.rng(E.strHash(e.name))); e.female = E.FEM.has(e.name);
   m.ents.push(e); return e;
 };
+E.strHash = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+E.FEM = new Set(['Alice', 'Camille', 'Dominique', 'Élodie', 'Gabrielle', 'Isabelle', 'Karine', 'Mélanie', 'Océane', 'Rosalie', 'Thérèse', 'Yvette', 'Amélie', 'Cécile', 'Émilie', 'Geneviève', 'Jade', 'Léa', 'Noémie', 'Pascale', 'Sandrine', 'Audrey', 'Bianca', 'Chloé', 'Delphine', 'Estelle', 'Fanny', 'Hélène', 'Inès', 'Josée', 'Laurence', 'Manon', 'Nadia', 'Ophélie', 'Pénélope', 'Roxane', 'Solange', 'Tania', 'Ursule', 'Valérie']);
 E.spawnWander = (m, tx, ty, r, rnd) => {
   rnd = rnd || Math.random;
   const types = Object.keys(D.TYPES);
-  const e = E.make('npc', { name: U.pick(D.FIRST, rnd), ptype: types[Math.floor(rnd() * types.length)], ap: Sp.randomAp(rnd), x: tx * T + 8, y: ty * T + 12,
+  E.used = E.used || new Set();
+  const free = D.FIRST.filter(n => !E.used.has(n)), nm = free.length ? free[Math.floor(rnd() * free.length)] : U.pick(D.FIRST, rnd);
+  E.used.add(nm);
+  const e = E.make('npc', { name: nm, ptype: types[Math.floor(rnd() * types.length)], ap: Sp.randomAp(U.rng(E.strHash(nm))), female: E.FEM.has(nm), x: tx * T + 8, y: ty * T + 12,
     home: { x: tx * T + 8, y: ty * T + 12, r: r * T }, spd: 16 + rnd() * 12, t: rnd() * 3, money: 20 + Math.floor(rnd() * 80), gender: rnd() });
   m.ents.push(e); return e;
 };
@@ -119,6 +125,13 @@ E.populate = m => {
       const tx = 4 + Math.floor(rnd() * 120), ty = (rnd() < 0.8 ? 20 + Math.floor(rnd() * 50) : 4 + Math.floor(rnd() * 88));
       const g = m.ground[ty * m.w + tx];
       if (!m.solid[ty * m.w + tx] && (g === 0 || g === 4 || g === 3)) { E.spawnWander(m, tx, ty, 5 + Math.floor(rnd() * 6), rnd); break; }
+    }
+  }
+  // place publique : foule
+  for (let i = 0; i < 14; i++) {
+    for (let k = 0; k < 40; k++) {
+      const tx = 57 + Math.floor(rnd() * 12), ty = 41 + Math.floor(rnd() * 12);
+      if (!m.solid[ty * m.w + tx]) { E.spawnWander(m, tx, ty, 6, rnd); break; }
     }
   }
   // animaux
