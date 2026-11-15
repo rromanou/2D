@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Petit Village</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,6 +17,8 @@
       <div class="bar" title="Soif"><label>Soif</label><div class="track"><div id="b-thirst" class="fill f-thirst"></div></div></div>
       <div class="bar" title="Santé"><label>Santé</label><div class="track"><div id="b-hp" class="fill f-hp"></div></div></div>
       <div class="bar" title="Endurance"><label>Endur.</label><div class="track"><div id="b-stam" class="fill f-stam"></div></div></div>
+      <div class="bar" title="Sommeil"><label>Sommeil</label><div class="track"><div id="b-sleep" class="fill f-sleep"></div></div></div>
+      <div class="bar" title="Détente"><label>Détente</label><div class="track"><div id="b-fun" class="fill f-fun"></div></div></div>
     </div>
     <div id="h-job"></div>
     <div id="h-stars"></div>
@@ -24,6 +27,8 @@
   <div id="topbtns">
     <button class="btn" id="btn-bag">Sac [I]</button>
     <button class="btn" id="btn-quest">Quêtes [J]</button>
+    <button class="btn" id="btn-build" style="display:none">Aménager [B]</button>
+    <button class="btn" id="btn-friends">Amis [R]</button>
     <button class="btn" id="btn-menu">Menu</button>
   </div>
   <canvas id="mini" width="128" height="96"></canvas>
@@ -47,6 +52,7 @@
 <script src="js/casinoui.js"></script>
 <script src="js/game.js"></script>
 <script src="js/actions.js"></script>
+<script src="js/life.js"></script>
 <script>
 (function () {
   var ff = new FontFace('Pixel', 'url(data:font/ttf;base64,' + RG.fontB64 + ')');
