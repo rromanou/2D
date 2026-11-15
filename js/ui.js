@@ -11,7 +11,7 @@ let dlg = null; // dialogue en cours
 
 UI.init = () => {
   el = { modal: $('modal'), dialog: $('dialog'), prompt: $('prompt'), toasts: $('toasts'), money: $('h-money'), time: $('h-time'), job: $('h-job'),
-         hunger: $('b-hunger'), thirst: $('b-thirst'), hp: $('b-hp'), stam: $('b-stam'), stars: $('h-stars'), equip: $('h-equip'), title: $('title'), banner: $('banner') };
+         hunger: $('b-hunger'), thirst: $('b-thirst'), hp: $('b-hp'), stam: $('b-stam'), sleep: $('b-sleep'), fun: $('b-fun'), stars: $('h-stars'), equip: $('h-equip'), title: $('title'), banner: $('banner') };
   el.modal.addEventListener('click', e => {
     if (e.target === el.modal && modal && !modal.locked) { UI.closeModal(); return; }
     const b = e.target.closest('[data-a]');
@@ -45,6 +45,7 @@ UI.hud = S => {
   el.time.textContent = 'Jour ' + S.day + ' - ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
   el.hunger.style.width = Math.max(0, S.hunger) + '%'; el.thirst.style.width = Math.max(0, S.thirst) + '%';
   el.hp.style.width = Math.max(0, S.hp) + '%'; el.stam.style.width = Math.max(0, S.stamina) + '%';
+  if (el.sleep) { el.sleep.style.width = Math.max(0, S.sleep == null ? 100 : S.sleep) + '%'; el.fun.style.width = Math.max(0, S.fun == null ? 100 : S.fun) + '%'; el.sleep.parentNode.parentNode.classList.toggle('low', S.sleep < 20); el.fun.parentNode.parentNode.classList.toggle('low', S.fun < 15); }
   el.hunger.parentNode.classList.toggle('low', S.hunger < 20); el.thirst.parentNode.classList.toggle('low', S.thirst < 20);
   const j = S.job ? D.JOBS[S.job.id] : null;
   el.job.textContent = j ? j.n + ' (niv. ' + (1 + Math.floor(((S.jobxp && S.jobxp[S.job.id]) || 0) / 8)) + ')' : 'Sans emploi';
