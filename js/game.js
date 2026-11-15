@@ -286,7 +286,7 @@ function drawPerson(e, isPlayer) {
   const dir = isPlayer ? P.dir : e.dir;
   const spr = Sp.char(ap, dir, fr, isPlayer ? S.equip.mask : false);
   const x = Math.round(e.x), y = Math.round(e.y);
-  if (e.kid) { const k = e.baby ? 0.5 : 0.7; ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
+  if (e.kid) { const k = e.kscale || (e.baby ? 0.5 : 0.7); ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
   ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 2 - camY, 8, 1); ctx.fillRect(x - 6 - camX, y - 1 - camY, 12, 2); ctx.fillRect(x - 4 - camX, y + 1 - camY, 8, 1);
   if (e.stun > 0) {
     ctx.save(); ctx.translate(x - camX, y - camY - 2); ctx.rotate(Math.PI / 2); ctx.drawImage(spr, -16, -9); ctx.restore();
