@@ -167,6 +167,7 @@ L.panel = e => {
           (isP ? '<button data-a="night" class="go">Passer la nuit ensemble</button><button data-a="cook">Cuisiner ensemble</button><button data-a="baby">Parler du bébé</button>' + (S.kids.length ? '' : '<button data-a="moveout">Demander de partir</button>') : '') +
           (r.lover && !r.married && S.inv.bague > 0 && r.p >= 150 ? '<button data-a="propose" class="go">Demander en mariage</button>' : '') +
           (guest ? '<button data-a="night" class="go">Passer la nuit ensemble</button><button data-a="leave">Raccompagner</button>' : '') +
+          (L.extraBtns ? L.extraBtns(e, r, lv, isP) : '') +
           '</div>';
       }
       return h + '</div></div>';
@@ -205,7 +206,7 @@ L.panel = e => {
         }
         case 'leave': UI.closeModal(); L.removeGuest(); UI.toast(e.name + ' repart chez soi.'); return;
         case 'propose':
-          if (r.p >= 150) { S.inv.bague--; r.married = 1; r.lover = 1; UI.closeModal(); UI.banner('Vous êtes mariés !', e.name); U.sfx('win'); UI.hotbarDirty && UI.hotbarDirty(); return; }
+          if (r.p >= 150) { S.inv.bague--; r.married = 1; r.lover = 1; UI.closeModal(); UI.banner('Vous êtes mariés !', e.name); U.sfx('win'); UI.hotbarDirty && UI.hotbarDirty(); if (L.wedding) L.wedding(e); return; }
           break;
         case 'night': UI.closeModal(); L.night(e); return;
         case 'movein': UI.closeModal(); L.moveIn(e); return;
@@ -216,6 +217,7 @@ L.panel = e => {
           else if (S.kids.length >= 4) say('« Notre famille est déjà bien grande ! »');
           else say('« Pour un bébé... passons la nuit ensemble. »');
           break;
+        default: if (L.extraAct && L.extraAct(a, b, e, say, r) === 'close') { UI.closeModal(); return; }
       }
       m.refresh();
     }
@@ -360,11 +362,13 @@ L.friends = () => {
 /*  Meubles : boutique, aménagement, placement                         */
 /* ------------------------------------------------------------------ */
 const fcache = {};
-L.furnIcon = id => {
-  if (fcache[id]) return fcache[id];
-  const F = D.FURN[id], cv = U.mk(F.w * 16, F.h * 16), c = cv.getContext('2d');
-  Sp.prop(c, F.k, 0, 0, F.w, F.h, F.o);
-  return (fcache[id] = cv);
+const dim = (F, r) => r ? { w: F.h, h: F.w } : { w: F.w, h: F.h };
+L.furnIcon = (id, r) => {
+  const key = id + (r ? '@' : '');
+  if (fcache[key]) return fcache[key];
+  const F = D.FURN[id], d = dim(F, r), cv = U.mk(d.w * 16, d.h * 16), c = cv.getContext('2d');
+  Sp.prop(c, F.k, 0, 0, d.w, d.h, F.o);
+  return (fcache[key] = cv);
 };
 L.furnImg = id => { const F = D.FURN[id], cv = L.furnIcon(id); return '<img class="fi" src="' + cv.toDataURL() + '" style="width:' + (cv.width * 2) + 'px;height:' + (cv.height * 2) + 'px" alt="">'; };
 G.furnShop = () => {
@@ -383,15 +387,15 @@ G.furnShop = () => {
 };
 
 const size = () => D.HOME_SIZES[S.home.size || 0];
-function fits(id, x, y, ignore) {
-  const F = D.FURN[id], sz = size(), dx = Math.floor(sz.w / 2);
+function fits(id, x, y, ignore, r) {
+  const F0 = D.FURN[id], F = Object.assign({}, F0, dim(F0, r)), sz = size(), dx = Math.floor(sz.w / 2);
   if (x < 1 || y < 2 || x + F.w > sz.w - 1 || y + F.h > sz.h - 1) return false;
   if (F.fn && y + F.h > sz.h - 2) return false;
   if (!F.flat) {
     for (let j = 0; j < F.h; j++) for (let i = 0; i < F.w; i++) { const tx = x + i, ty = y + j; if (tx === dx && ty >= sz.h - 3) return false; }
   }
   for (let k = 0; k < S.furn.length; k++) {
-    if (k === ignore) continue; const f = S.furn[k], O = D.FURN[f.id]; if (!O) continue;
+    if (k === ignore) continue; const f = S.furn[k], O0 = D.FURN[f.id]; if (!O0) continue; const O = dim(O0, f.r); O.flat = O0.flat;
     if (F.flat !== O.flat && (F.flat || O.flat)) continue; // tapis sous les meubles
     if (x < f.x + O.w && x + F.w > f.x && y < f.y + O.h && y + F.h > f.y) return false;
   }
@@ -426,19 +430,20 @@ L.build = () => {
       else if (a === 'floor') { const i = +b.dataset.i; if (S.home.floor !== i && pay(80)) { S.home.floor = i; L.rebuild(); } }
       else if (a === 'size') {
         const z = D.HOME_SIZES[+b.dataset.i];
-        if (pay(z.p)) { S.home.size = z.id; for (let i = S.furn.length - 1; i >= 0; i--) { const f = S.furn[i], g = S.furn.splice(i, 1)[0]; if (fits(g.id, g.x, g.y, -1)) S.furn.splice(i, 0, g); else S.furnInv[g.id] = (S.furnInv[g.id] || 0) + 1; } U.sfx('buy'); UI.toast('Ta maison est maintenant : ' + z.n + ' !', 'ok'); L.rebuild(); }
+        if (pay(z.p)) { S.home.size = z.id; for (let i = S.furn.length - 1; i >= 0; i--) { const f = S.furn[i], g = S.furn.splice(i, 1)[0]; if (fits(g.id, g.x, g.y, -1, g.r)) S.furn.splice(i, 0, g); else S.furnInv[g.id] = (S.furnInv[g.id] || 0) + 1; } U.sfx('buy'); UI.toast('Ta maison est maintenant : ' + z.n + ' !', 'ok'); L.rebuild(); }
       }
       m.refresh();
     }
   });
 };
 G.openBuild = L.build;
-L.startPlace = id => { C.place = { id, tx: Math.floor(RG.P.x / T), ty: Math.floor(RG.P.y / T) - 1, ok: false }; L.placeMove(C.place.tx, C.place.ty); };
-L.placeMove = (tx, ty) => { const p = C.place; if (!p) return; p.tx = tx; p.ty = ty; p.ok = fits(p.id, tx, ty, -1); };
+L.startPlace = id => { C.place = { id, r: 0, tx: Math.floor(RG.P.x / T), ty: Math.floor(RG.P.y / T) - 1, ok: false }; L.placeMove(C.place.tx, C.place.ty); };
+L.placeMove = (tx, ty) => { const p = C.place; if (!p) return; p.tx = tx; p.ty = ty; p.ok = fits(p.id, tx, ty, -1, p.r); };
+L.rotatePlace = () => { const p = C.place; if (!p) return; p.r = p.r ? 0 : 1; L.placeMove(p.tx, p.ty); };
 L.placeClick = () => {
   const p = C.place; if (!p) return;
   if (!p.ok) { UI.toast('Impossible de poser ici.', 'err'); U.sfx('err'); return; }
-  S.furn.push({ id: p.id, x: p.tx, y: p.ty }); S.furnInv[p.id]--; U.sfx('buy');
+  S.furn.push({ id: p.id, x: p.tx, y: p.ty, r: p.r ? 1 : 0 }); S.furnInv[p.id]--; U.sfx('buy');
   const id = p.id; if (!(S.furnInv[id] > 0)) C.place = null;
   L.rebuild();
   if (C.place) L.placeMove(p.tx, p.ty); else L.build();
@@ -446,15 +451,15 @@ L.placeClick = () => {
 L.cancelPlace = () => { C.place = null; UI.setPrompt(null); L.build(); };
 L.drawGhost = (ctx, camX, camY) => {
   const p = C.place; if (!p) return;
-  const F = D.FURN[p.id], x = p.tx * T - camX, y = p.ty * T - camY;
-  ctx.globalAlpha = 0.65; ctx.drawImage(L.furnIcon(p.id), x, y); ctx.globalAlpha = 1;
+  const F = dim(D.FURN[p.id], p.r), x = p.tx * T - camX, y = p.ty * T - camY;
+  ctx.globalAlpha = 0.65; ctx.drawImage(L.furnIcon(p.id, p.r), x, y); ctx.globalAlpha = 1;
   ctx.fillStyle = p.ok ? 'rgba(80,220,100,0.35)' : 'rgba(230,70,60,0.4)'; ctx.fillRect(x, y, F.w * T, F.h * T);
   ctx.strokeStyle = p.ok ? '#6fff8a' : '#ff6a5a'; ctx.strokeRect(x + 0.5, y + 0.5, F.w * T - 1, F.h * T - 1);
 };
 
 /* enveloppes autour des fonctions du jeu */
 const oldTarget = G.updateTarget, oldInteract = G.interact;
-G.updateTarget = () => { if (C.place) { C.target = null; UI.setPrompt('Clic : poser ' + D.FURN[C.place.id].n + '  -  Échap : annuler'); return; } oldTarget(); };
+G.updateTarget = () => { if (C.place) { C.target = null; UI.setPrompt('Clic : poser ' + D.FURN[C.place.id].n + '  -  T ou clic droit : pivoter  -  Échap : annuler'); return; } oldTarget(); };
 G.interact = () => { if (C.place) { L.placeClick(); return; } oldInteract(); };
 
 /* mise à jour continue */
@@ -467,4 +472,5 @@ L.update = dt => {
   if (S.guest && C.cur && C.cur.name !== 'home' && C.fade.dir === 0) L.removeGuest();
   if (S.preg && S.abs >= S.preg.due && C.mode === 'play' && !UI.isModal() && !UI.dialogOpen() && C.fade.dir === 0 && !S.jail) L.birth();
 };
+L.X = { kidStage, kidAp, STAGES, KSCALE, keyOf, rel, level, statusLabel, pay, kidAge };
 })();
