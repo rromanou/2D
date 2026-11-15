@@ -47,6 +47,7 @@ Game.useItem = id => {
   U.sfx('eat'); UI.toast(it.k === 'food' ? 'Miam : ' + it.n + '.' : 'Glou : ' + it.n + '.', 'ok');
   Game.event('eat');
 };
+Game.holdItem = id => { S.equip.hand = S.equip.hand === id ? null : id; };
 Game.equipWeapon = id => { S.equip.weapon = S.equip.weapon === id ? null : id; };
 Game.toggleMask = () => { if (S.inv.cagoule > 0) S.equip.mask = !S.equip.mask; };
 Game.deposit = n => { if (n === 'all') n = Math.floor(S.money); n = Math.min(n, Math.floor(S.money)); if (n <= 0) { UI.toast('Rien à déposer.', 'err'); return; } S.money -= n; S.bank += n; U.sfx('cash'); Game.event('deposit', n); };
@@ -150,9 +151,9 @@ Game.updateTarget = () => {
   for (const e of m.ents) {
     if (e.kind === 'deco' || e.hidden) continue;
     const d = Math.hypot(P.x - e.x, P.y - e.y), reach = e.kind === 'static' ? 34 : e.kind === 'animal' ? 22 : 26;
-    if (d < reach) consider({ t: 'ent', e, d });
+    if (d < reach) consider({ t: 'ent', e, d: e.kind === 'animal' ? d + 40 : d });
   }
-  for (const p of C.pets) { const d = Math.hypot(P.x - p.x, P.y - p.y); if (d < 22) consider({ t: 'pet', e: p, d }); }
+  for (const p of C.pets) { const d = Math.hypot(P.x - p.x, P.y - p.y); if (d < 22) consider({ t: 'pet', e: p, d: d + 40 }); }
   for (const z of m.zones) if (P.x >= z.x && P.x <= z.x + z.w && P.y >= z.y && P.y <= z.y + z.h) consider({ t: 'zone', z, d: 30 });
   if (m.outdoor && !C.fishing) {
     const f = facePoint();
@@ -194,6 +195,7 @@ function staticTalk(e) {
   for (const mn of (def.menu || [])) {
     if (mn.startsWith('shop:')) ch.push({ label: mn === 'shop:cafe' ? 'Commander' : mn === 'shop:pet' ? 'Voir les animaux' : mn === 'shop:black' ? 'Voir la marchandise' : mn === 'shop:studio' ? 'Voir les accessoires' : 'Acheter', fn: () => UI.shop(mn.slice(5)) });
     else if (mn === 'furn') ch.push({ label: 'Voir les meubles', fn: () => Game.furnShop() });
+    else if (mn === 'divorce') ch.push({ label: 'Divorce / séparation', fn: () => Game.divorceMenu && Game.divorceMenu() });
     else if (mn === 'heal') ch.push({ label: 'Soins (30 $)', fn: () => Game.heal() });
     else if (mn === 'bank') ch.push({ label: 'Mon compte', fn: () => UI.bank() });
     else if (mn === 'jobs') ch.push({ label: 'Voir les emplois', fn: () => UI.jobs() });
@@ -208,7 +210,7 @@ function staticTalk(e) {
   UI.say(def.name, lines, ch);
 }
 function npcTalk(e) {
-  if (e.kid) { Game.kidTalk(e); return; }
+  if (e.kid || e.mainChar) { Game.kidTalk(e); return; }
   if (e.stun > 0) { e.stun = 0; UI.toast(e.name + ' se relève, groggy.'); return; }
   e.talk = 3.5; E.faceTo(e, P.x, P.y);
   const first = !e.talked;
@@ -238,7 +240,7 @@ function copTalk(e) {
 /* ------------------------------------------------------------------ */
 function zoneAction(z) {
   switch (z.action) {
-    case 'cashier': startCashier(); break;
+    case 'cashier': if (Game.cashierGame && S.job && S.job.id === 'caissier') Game.cashierGame(); else startCashier(); break;
     case 'mirror': Game.openMirror(); break;
     case 'sleep': RG.Life.sleepDialog(); break;
     case 'stash': UI.stash(); break;
@@ -399,6 +401,7 @@ function robCivilian(v) {
   const it = D.ITEMS[S.equip.weapon], lvl = D.WEAPON_LV[it.w];
   UI.closeDialog();
   v.flee = 10; v.talk = 0; scare(110, 6);
+  if (Game.npcResist && Game.npcResist(v)) return;
   if (v.robbedT && v.robbedT > C.now) { UI.toast(v.name + ' n\'a plus rien sur lui.'); return; }
   const loot = Math.round(v.money * (0.35 + 0.3 * (lvl - 1)) + ri(0, 15));
   v.robbedT = C.now + 120; v.money = Math.round(v.money * 0.2);
@@ -434,6 +437,7 @@ function robStore(e) {
   U.sfx('alarm');
   if (Math.random() < chance) {
     const loot = ri(rb.min, rb.max);
+    Game.event('rob', e.id2);
     UI.say(name, ['Prenez tout ! Ne me faites pas de mal !'], [], () => { Game.gain(loot); Game.floater(P.x, P.y, '+' + loot + ' $', '#8dff8d'); UI.toast('Braquage réussi : ' + money(loot) + ' de ' + rb.name + '. Fuis !', 'ok'); });
     addWanted(rb.heat + (lvl >= 3 ? 1 : 0)); crimeDone();
   } else {
@@ -552,4 +556,5 @@ Game.faint = () => {
   const w = W.get('world'), home = w.houses.find(h => h.home);
   Game.go('world', home.front.x, home.front.y, 'down');
 };
+Game.openMini = openMini; Game.payJob = payJob; Game.jobLevel = jobLevel; Game.crimeDone = crimeDone; Game.scare = scare; Game.witnesses = witnesses;
 })();
