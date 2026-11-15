@@ -41,6 +41,7 @@ Game.useItem = id => {
   if (it.k !== 'food' && it.k !== 'drink') return;
   S.inv[id]--;
   S.hunger = Math.min(100, S.hunger + (it.h || 0)); S.thirst = Math.min(100, S.thirst + (it.t || 0));
+  S.thirst = Math.max(0, S.thirst); if (it.f) S.fun = Math.min(100, (S.fun || 0) + it.f);
   if (it.hp) S.hp = Math.min(100, S.hp + it.hp);
   if (it.st) S.stamina = Math.min(100, S.stamina + it.st);
   U.sfx('eat'); UI.toast(it.k === 'food' ? 'Miam : ' + it.n + '.' : 'Glou : ' + it.n + '.', 'ok');
@@ -192,6 +193,8 @@ function staticTalk(e) {
   const ch = [];
   for (const mn of (def.menu || [])) {
     if (mn.startsWith('shop:')) ch.push({ label: mn === 'shop:cafe' ? 'Commander' : mn === 'shop:pet' ? 'Voir les animaux' : mn === 'shop:black' ? 'Voir la marchandise' : mn === 'shop:studio' ? 'Voir les accessoires' : 'Acheter', fn: () => UI.shop(mn.slice(5)) });
+    else if (mn === 'furn') ch.push({ label: 'Voir les meubles', fn: () => Game.furnShop() });
+    else if (mn === 'heal') ch.push({ label: 'Soins (30 $)', fn: () => Game.heal() });
     else if (mn === 'bank') ch.push({ label: 'Mon compte', fn: () => UI.bank() });
     else if (mn === 'jobs') ch.push({ label: 'Voir les emplois', fn: () => UI.jobs() });
     else if (mn === 'mirror') ch.push({ label: 'Utiliser le miroir', fn: () => Game.openMirror() });
@@ -201,9 +204,11 @@ function staticTalk(e) {
   }
   if (def.robbable && S.equip.weapon) ch.push({ label: 'Braquer (' + D.ITEMS[S.equip.weapon].n + ')', fn: () => robStore(e) });
   if (ch.length) ch.push({ label: 'Au revoir' });
+  if (Game.relChoices && e.role !== 'Videur') Game.relChoices(e, ch);
   UI.say(def.name, lines, ch);
 }
 function npcTalk(e) {
+  if (e.kid) { Game.kidTalk(e); return; }
   if (e.stun > 0) { e.stun = 0; UI.toast(e.name + ' se relève, groggy.'); return; }
   e.talk = 3.5; E.faceTo(e, P.x, P.y);
   const first = !e.talked;
@@ -218,7 +223,8 @@ function npcTalk(e) {
   const lines = [];
   if (first) lines.push('Salut, moi c\'est ' + e.name + '.');
   lines.push(line);
-  const ch = S.equip.weapon ? [{ label: 'Braquer', fn: () => robCivilian(e) }, { label: 'Au revoir' }] : [];
+  const ch = S.equip.weapon ? [{ label: 'Braquer', fn: () => robCivilian(e) }, { label: 'Au revoir' }] : [{ label: 'Au revoir' }];
+  if (Game.relChoices) Game.relChoices(e, ch);
   UI.say(e.name, lines, ch);
 }
 function copTalk(e) {
@@ -234,10 +240,11 @@ function zoneAction(z) {
   switch (z.action) {
     case 'cashier': startCashier(); break;
     case 'mirror': Game.openMirror(); break;
-    case 'sleep': UI.say('Lit', ['Dormir jusqu\'au matin ? Tu récupéreras ta santé et ton endurance.'], [{ label: 'Dormir', fn: sleep }, { label: 'Pas maintenant' }]); break;
+    case 'sleep': RG.Life.sleepDialog(); break;
     case 'stash': UI.stash(); break;
     case 'roulette': case 'blackjack': case 'poker': case 'slot': RG.Casino.open(z.action); break;
     case 'house': houseAction(z); break;
+    default: if (Game.lifeZone) Game.lifeZone(z);
   }
 }
 function sleep() {
@@ -387,6 +394,7 @@ Game.useWeapon = () => {
   shoot(it);
 };
 function robCivilian(v) {
+  if (Game.relBump) Game.relBump(v, -40);
   if (!S.equip.weapon) return;
   const it = D.ITEMS[S.equip.weapon], lvl = D.WEAPON_LV[it.w];
   UI.closeDialog();
@@ -412,7 +420,7 @@ function shoot(it) {
   if (C.now - (C.lastShot || -9) > 3) { C.lastShot = C.now; if (witnesses(null, 160) > 0) addWanted(1); }
 }
 Game.onShotHit = e => {
-  if (e.kind === 'npc') { e.stun = 8; e.flee = 0; scare(120, 6); if (witnesses(e, 140) > 0 || Math.random() < 0.4) addWanted(1); crimeDone(); Game.floater(e.x, e.y, 'Touché', '#ff9a9a'); }
+  if (e.kind === 'npc') { if (Game.relBump) Game.relBump(e, -60); e.stun = 8; e.flee = 0; scare(120, 6); if (witnesses(e, 140) > 0 || Math.random() < 0.4) addWanted(1); crimeDone(); Game.floater(e.x, e.y, 'Touché', '#ff9a9a'); }
   else if (e.kind === 'cop') { e.stun = 6; addWanted(2); for (const c of C.cur.ents) if (c.kind === 'cop') c.chase = true; crimeDone(); Game.floater(e.x, e.y, 'Touché', '#ff9a9a'); }
   else if (e.kind === 'animal') { e.state = 'idle'; e.t = 2; }
 };
