@@ -18,6 +18,8 @@
       <div class="bar" title="Santé"><label>Santé</label><div class="track"><div id="b-hp" class="fill f-hp"></div></div></div>
       <div class="bar" title="Endurance"><label>Endur.</label><div class="track"><div id="b-stam" class="fill f-stam"></div></div></div>
       <div class="bar" title="Sommeil"><label>Sommeil</label><div class="track"><div id="b-sleep" class="fill f-sleep"></div></div></div>
+      <div class="bar" title="Vessie"><label>Toilet.</label><div class="track"><div id="b-pee" class="fill f-pee"></div></div></div>
+      <div class="bar" title="Hygiène"><label>Hygiène</label><div class="track"><div id="b-hyg" class="fill f-hyg"></div></div></div>
       <div class="bar" title="Détente"><label>Détente</label><div class="track"><div id="b-fun" class="fill f-fun"></div></div></div>
     </div>
     <div id="h-job"></div>
@@ -33,6 +35,7 @@
   </div>
   <canvas id="mini" width="128" height="96"></canvas>
   <div id="hotbar"></div>
+  <div id="fam"></div>
   <div id="prompt"></div>
   <div id="toasts"></div>
   <div id="banner"></div>
@@ -53,6 +56,7 @@
 <script src="js/game.js"></script>
 <script src="js/actions.js"></script>
 <script src="js/life.js"></script>
+<script src="js/more.js"></script>
 <script>
 (function () {
   var ff = new FontFace('Pixel', 'url(data:font/ttf;base64,' + RG.fontB64 + ')');
