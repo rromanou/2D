@@ -77,12 +77,12 @@ const INT = {
     props: [{ k: 'table', x: 2, y: 5, w: 2, h: 1, o: { cloth: '#f48fb1' } }, { k: 'chair', x: 1, y: 5 }, { k: 'chair', x: 4, y: 5 }, { k: 'table', x: 2, y: 7, w: 2, h: 1, o: { cloth: '#fff7e6' } }, { k: 'chair', x: 1, y: 7 }, { k: 'chair', x: 4, y: 7 },
       { k: 'table', x: 7, y: 5, w: 2, h: 1, o: { cloth: '#fff7e6' } }, { k: 'chair', x: 6, y: 5 }, { k: 'chair', x: 9, y: 5 }, { k: 'table', x: 7, y: 7, w: 2, h: 1, o: { cloth: '#f48fb1' } }, { k: 'chair', x: 6, y: 7 }, { k: 'chair', x: 9, y: 7 },
       { k: 'counter', x: 9, y: 3, w: 4, o: { top: '#f4e4cc' } }, { k: 'oven', x: 2, y: 2, w: 3 }, { k: 'plant', x: 12, y: 7 }],
-    npcs: [{ id: 'bruno', x: 10, y: 2, dir: 'down' }], wander: 2 },
+    npcs: [{ id: 'bruno', x: 10, y: 2, dir: 'down' }], zones: [{ x: 5, y: 3, w: 3, h: 1, action: 'serve', label: 'Servir les clients (serveur)' }], wander: 2 },
   biblio: { title: 'Bibliothèque', w: 12, h: 9, floor: 'wood', wall: '#e8dcc0',
     props: [{ k: 'bookshelf', x: 1, y: 2, w: 3 }, { k: 'bookshelf', x: 5, y: 2, w: 3 }, { k: 'bookshelf', x: 9, y: 2, w: 2 }, { k: 'table', x: 3, y: 5, w: 3, h: 1, o: { cloth: '#e8dcc0' } }, { k: 'chair', x: 2, y: 5 }, { k: 'chair', x: 6, y: 5 },
       { k: 'desk', x: 8, y: 5, w: 3 }, { k: 'plant', x: 1, y: 6 }, { k: 'rug', x: 3, y: 6, w: 4, h: 1, o: { col: '#6a4a8a' }, flat: 1 }],
     npcs: [{ id: 'odile', x: 9, y: 4, dir: 'down' }],
-    zones: [{ x: 1, y: 3, w: 10, h: 1, action: 'read', label: 'Lire un livre' }] },
+    zones: [{ x: 1, y: 3, w: 10, h: 1, action: 'read', label: 'Lire un livre' }, { x: 2, y: 7, w: 4, h: 1, action: 'shelve', label: 'Ranger les livres (bibliothécaire)' }] },
   gym: { title: 'Salle de sport', w: 14, h: 10, floor: 'tile', wall: '#d8dce8',
     props: [{ k: 'treadmill', x: 2, y: 3 }, { k: 'treadmill', x: 4, y: 3 }, { k: 'treadmill', x: 6, y: 3 }, { k: 'weights', x: 9, y: 3 }, { k: 'weights', x: 11, y: 3 }, { k: 'rug', x: 2, y: 6, w: 5, h: 2, o: { col: '#4a5a6f' }, flat: 1 }, { k: 'plant', x: 12, y: 7 }, { k: 'poster', x: 8, y: 0, o: { col: '#e8a93b' } }],
     npcs: [{ id: 'hector', x: 10, y: 6, dir: 'down' }],
@@ -106,7 +106,16 @@ const INT = {
     props: [{ k: 'counter', x: 7, y: 3, w: 6, o: { top: '#6a4128', front: '#3b2418' } }, { k: 'stool', x: 7, y: 4 }, { k: 'stool', x: 9, y: 4 }, { k: 'stool', x: 11, y: 4 }, { k: 'table', x: 9, y: 6, w: 2, h: 1, o: { cloth: '#6a4128' } }, { k: 'chair', x: 8, y: 6 }, { k: 'chair', x: 11, y: 6 },
       { k: 'rug', x: 2, y: 4, w: 5, h: 3, o: { col: '#8a2a5a' }, flat: 1 }, { k: 'neon', x: 2, y: 0, w: 3, o: { col: '#ffd54f' } }, { k: 'plant', x: 12, y: 7 }],
     npcs: [{ id: 'mario', x: 9, y: 2, dir: 'down' }],
-    zones: [{ x: 2, y: 4, w: 5, h: 3, action: 'dance', label: 'Danser' }], wander: 3 },
+    zones: [{ x: 2, y: 4, w: 5, h: 3, action: 'dance', label: 'Danser' }, { x: 8, y: 2, w: 4, h: 1, action: 'tend', label: 'Préparer des cocktails (barman)' }], wander: 3 },
+  bijou: { title: 'Bijouterie', w: 10, h: 8, floor: 'tile', wall: '#f0e4ec',
+    props: [{ k: 'counter', x: 2, y: 3, w: 6, o: { top: '#f8f0f4', front: '#a8506a' } }, { k: 'plant', x: 8, y: 6 }, { k: 'rug', x: 3, y: 5, w: 4, h: 2, o: { col: '#8a2a5a' }, flat: 1 }],
+    npcs: [{ id: 'bijoutier', x: 5, y: 2, dir: 'down' }], wander: 1 },
+  tribunal: { title: 'Tribunal des familles', w: 12, h: 9, floor: 'wood', wall: '#d8d0c0',
+    props: [{ k: 'desk', x: 4, y: 3, w: 4 }, { k: 'bookshelf', x: 1, y: 2, w: 2 }, { k: 'bookshelf', x: 9, y: 2, w: 2 }, { k: 'chair', x: 5, y: 5 }, { k: 'chair', x: 7, y: 5 }, { k: 'plant', x: 10, y: 6 }],
+    npcs: [{ id: 'juge', x: 5, y: 2, dir: 'down' }], wander: 2 },
+  pizz: { title: 'Pizzeria', w: 12, h: 9, floor: 'tile', wall: '#f4d8c0',
+    props: [{ k: 'counter', x: 6, y: 3, w: 5, o: { top: '#f4e4cc', front: '#c8503f' } }, { k: 'oven', x: 1, y: 2, w: 3 }, { k: 'table', x: 2, y: 5, w: 2, h: 1, o: { cloth: '#c8503f' } }, { k: 'chair', x: 1, y: 5 }, { k: 'chair', x: 4, y: 5 }, { k: 'table', x: 7, y: 6, w: 2, h: 1, o: { cloth: '#fff7e6' } }, { k: 'plant', x: 10, y: 6 }],
+    npcs: [{ id: 'pizzaiolo', x: 8, y: 2, dir: 'down' }], wander: 2 },
   bakery: { title: 'Boulangerie', w: 10, h: 8, floor: 'tile', wall: '#f6e4cc',
     props: [{ k: 'counter', x: 5, y: 3, w: 4, o: { top: '#f4e4cc', front: '#c8a070' } }, { k: 'oven', x: 1, y: 2, w: 3 }, { k: 'table', x: 2, y: 5, w: 2, h: 1, o: { cloth: '#f48fb1' } }, { k: 'chair', x: 1, y: 5 }, { k: 'chair', x: 4, y: 5 }, { k: 'plant', x: 8, y: 6 }],
     npcs: [{ id: 'boulanger', x: 6, y: 2, dir: 'down' }] },
@@ -223,7 +232,10 @@ const MAIN_B2 = [
   { id: 'clinic', bx: 57, w: 5, o: { kind: 'shop', text: 'CLINIQUE', signBg: '#3a8aa8', awn: ['#fff', '#c8403a'], wall: '#e4f0f0' } },
   { id: 'arcade', bx: 66, w: 7, o: { kind: 'shop', text: 'ARCADE', signBg: '#2b2540', signFg: '#4fd8ff', extra: 'lights', awn: ['#4b78c8', '#ffd54f'], wall: '#4a4570' } },
   { id: 'bar',    bx: 74, w: 7, o: { kind: 'shop', text: 'BAR', signBg: '#4a3238', signFg: '#ffd54f', awn: ['#8a2a5a', '#ffd54f'], wall: '#6a4a52' } },
-  { id: 'bakery', bx: 82, w: 7, o: { kind: 'shop', text: 'BOULANGERIE', signBg: '#c89a4a', signFg: '#2b1b14', awn: ['#e8a93b', '#fff7e6'], wall: '#f6e4cc' } }
+  { id: 'bakery', bx: 82, w: 7, o: { kind: 'shop', text: 'BOULANGERIE', signBg: '#c89a4a', signFg: '#2b1b14', awn: ['#e8a93b', '#fff7e6'], wall: '#f6e4cc' } },
+  { id: 'bijou', bx: 91, w: 7, o: { kind: 'shop', text: 'BIJOUTERIE', signBg: '#6a2a5a', signFg: '#ffe9a8', extra: 'lights', awn: ['#8a2a5a', '#f8f0f4'], wall: '#f0e4ec' } },
+  { id: 'tribunal', bx: 99, w: 8, o: { kind: 'shop', text: 'TRIBUNAL', signBg: '#4a4a52', extra: 'columns', awn: ['#6a6a72', '#d8d0c0'], wall: '#d8d0c0' } },
+  { id: 'pizz', bx: 108, w: 7, o: { kind: 'shop', text: 'PIZZERIA', signBg: '#a8302a', awn: ['#4fb04f', '#fff7e6'], wall: '#f4d8c0' } }
 ];
 const HWALLS = ['#f3e4c2', '#e8d8b8', '#dfe8d0', '#e6dcee', '#f0d8d0', '#d8e8f0'];
 const HROOFS = ['#c8503f', '#4b78c8', '#6a8f4f', '#8a63c9', '#b8803a', '#3fa9a0'];
@@ -467,8 +479,9 @@ World.homeDef = () => {
   const dxd = Math.floor(sz.w / 2);
   furn.forEach((f, i) => {
     const F = D.FURN[f.id]; if (!F) return;
-    props.push({ k: F.k, x: f.x, y: f.y, w: F.w, h: F.h, o: F.o, flat: F.flat });
-    if (F.fn && f.y + F.h <= sz.h - 2) zones.push({ x: f.x, y: f.y + F.h, w: F.w, h: 1, action: 'furn', label: LAB[F.fn], data: { fn: F.fn, idx: i } });
+    const fw = f.r ? F.h : F.w, fh = f.r ? F.w : F.h;
+    props.push({ k: F.k, x: f.x, y: f.y, w: fw, h: fh, o: F.o, flat: F.flat });
+    if (F.fn && f.y + fh <= sz.h - 2) zones.push({ x: f.x, y: f.y + fh, w: fw, h: 1, action: 'furn', label: LAB[F.fn], data: { fn: F.fn, idx: i } });
   });
   return { title: 'Chez moi', w: sz.w, h: sz.h, floor: fl.id, floorC: fl.c, wall: H.wall || D.WALLS[0], props, zones, npcs: [] };
 };
