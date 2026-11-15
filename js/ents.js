@@ -74,14 +74,20 @@ E.spawnStatic = (m, id, tx, ty, dir) => {
   m.ents.push(e); return e;
 };
 E.strHash = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
-E.FEM = new Set(['Alice', 'Camille', 'Dominique', 'Élodie', 'Gabrielle', 'Isabelle', 'Karine', 'Mélanie', 'Océane', 'Rosalie', 'Thérèse', 'Yvette', 'Amélie', 'Cécile', 'Émilie', 'Geneviève', 'Jade', 'Léa', 'Noémie', 'Pascale', 'Sandrine', 'Audrey', 'Bianca', 'Chloé', 'Delphine', 'Estelle', 'Fanny', 'Hélène', 'Inès', 'Josée', 'Laurence', 'Manon', 'Nadia', 'Ophélie', 'Pénélope', 'Roxane', 'Solange', 'Tania', 'Ursule', 'Valérie']);
+E.FEM = new Set(['Alice', 'Camille', 'Dominique', 'Élodie', 'Gabrielle', 'Isabelle', 'Karine', 'Mélanie', 'Océane', 'Rosalie', 'Thérèse', 'Yvette', 'Amélie', 'Cécile', 'Émilie', 'Geneviève', 'Jade', 'Léa', 'Noémie', 'Pascale', 'Sandrine', 'Audrey', 'Bianca', 'Chloé', 'Delphine', 'Estelle', 'Fanny', 'Hélène', 'Inès', 'Josée', 'Laurence', 'Manon', 'Nadia', 'Ophélie', 'Pénélope', 'Roxane', 'Solange', 'Tania', 'Ursule', 'Valérie', 'Colette', 'Gisèle', 'Pauline', 'Denise', 'Berthe']);
+E.apFor = name => {
+  const r = U.rng(E.strHash(name)), ap = Sp.randomAp(r), f = E.FEM.has(name);
+  ap.hair = f ? (r() < 0.6 ? 1 : 3) : [0, 0, 2, 4, 5][Math.floor(r() * 5)];
+  if (f && ap.hat > 3) ap.hat = 0;
+  return ap;
+};
 E.spawnWander = (m, tx, ty, r, rnd) => {
   rnd = rnd || Math.random;
   const types = Object.keys(D.TYPES);
   E.used = E.used || new Set();
   const free = D.FIRST.filter(n => !E.used.has(n)), nm = free.length ? free[Math.floor(rnd() * free.length)] : U.pick(D.FIRST, rnd);
   E.used.add(nm);
-  const e = E.make('npc', { name: nm, ptype: types[Math.floor(rnd() * types.length)], ap: Sp.randomAp(U.rng(E.strHash(nm))), female: E.FEM.has(nm), x: tx * T + 8, y: ty * T + 12,
+  const e = E.make('npc', { name: nm, ptype: types[Math.floor(rnd() * types.length)], ap: E.apFor(nm), female: E.FEM.has(nm), x: tx * T + 8, y: ty * T + 12,
     home: { x: tx * T + 8, y: ty * T + 12, r: r * T }, spd: 16 + rnd() * 12, t: rnd() * 3, money: 20 + Math.floor(rnd() * 80), gender: rnd() });
   m.ents.push(e); return e;
 };
