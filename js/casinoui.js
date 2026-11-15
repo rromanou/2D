@@ -305,7 +305,7 @@ const SEATP = [
   { sx: 296, sy: 104, dir: 'left', cx: 240, cy: 86, bx: 244, by: 110, lx: 296, ly: 107 }
 ];
 const pkAp = [];
-function seatAp(i, s) { if (s.human) return RG.S.ap; const ents = C.pokerEnts; if (ents && ents[i] && s.name === ents[i].name && ents[i].ap) return ents[i].ap; const k = s.name; return pkAp[k] || (pkAp[k] = Sp.randomAp()); }
+function seatAp(i, s) { if (s.human) return RG.S.ap; const ents = C.pokerEnts; if (ents && ents[i] && s.name === ents[i].name && ents[i].ap) return ents[i].ap; const k = s.name; return pkAp[k] || (pkAp[k] = RG.Ent.apFor(k)); }
 function scenePoker(dt) {
   const x = X(), P = x.P, S = RG.S, me = P.seats[0].human, h = P.seats[0];
   rect(0, 0, W, H, '#1a0c14'); for (let y = 0; y < H; y += 8) for (let xx = ((y / 8) % 2) * 8; xx < W; xx += 16) rect(xx, y, 8, 8, '#20101a');
