@@ -48,6 +48,7 @@ Game.setMap = (name, x, y, dir) => {
   E.Nav.map = null;
   if (C.cur.name !== 'world') UI.banner(C.cur.title); else if (prev && prev.name !== 'world') UI.banner('Village');
   Game.event('visit', name);
+  if (Game.lifeEnter) Game.lifeEnter(name);
 };
 Game.go = (name, x, y, dir) => {
   if (C.fade.dir !== 0) return;
@@ -59,6 +60,7 @@ Game.go = (name, x, y, dir) => {
 /*  Nouvelle partie / chargement                                       */
 /* ------------------------------------------------------------------ */
 function startAt(mapName, x, y, dir) {
+  if (RG.Life) RG.Life.init();
   UI.hideTitle(); C.mode = 'play';
   syncPets();
   Game.setMap(mapName, x, y, dir);
@@ -117,8 +119,11 @@ addEventListener('keydown', e => {
     case 'KeyF': if (!UI.isModal() && !UI.dialogOpen()) Game.useWeapon(); break;
     case 'KeyI': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'inv') UI.closeModal(); } else if (!UI.dialogOpen()) UI.inventory(); break;
     case 'KeyJ': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'quests') UI.closeModal(); } else if (!UI.dialogOpen()) UI.quests(); break;
+    case 'KeyR': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'rel') UI.closeModal(); } else if (!UI.dialogOpen()) RG.Life.friends(); break;
+    case 'KeyB': if (C.cur && C.cur.name === 'home' && !UI.isModal() && !UI.dialogOpen() && !C.place) RG.Life.build(); break;
     case 'KeyM': document.getElementById('mini').classList.toggle('big'); break;
     case 'Escape':
+      if (C.place) { RG.Life.cancelPlace(); break; }
       if (C.mini) { Game.miniCancel(); break; }
       if (C.fishing) { C.fishing = null; break; }
       if (UI.dialogOpen()) UI.closeDialog();
@@ -129,8 +134,8 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) { keys[k] = false; if (!typing(e)) e.preventDefault(); } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
-canvas.addEventListener('pointerdown', e => { ptr.on = true; ptr.x = e.clientX; ptr.y = e.clientY; });
-addEventListener('pointermove', e => { if (ptr.on) { ptr.x = e.clientX; ptr.y = e.clientY; } });
+canvas.addEventListener('pointerdown', e => { if (C.place) { RG.Life.placeMove(Math.floor((e.clientX / scale + camX) / T), Math.floor((e.clientY / scale + camY) / T)); RG.Life.placeClick(); return; } ptr.on = true; ptr.x = e.clientX; ptr.y = e.clientY; });
+addEventListener('pointermove', e => { if (C.place) RG.Life.placeMove(Math.floor((e.clientX / scale + camX) / T), Math.floor((e.clientY / scale + camY) / T)); if (ptr.on) { ptr.x = e.clientX; ptr.y = e.clientY; } });
 addEventListener('pointerup', () => { ptr.on = false; });
 addEventListener('pointercancel', () => { ptr.on = false; });
 
@@ -178,13 +183,14 @@ function updateNeeds(dt, running) {
   if (S.hunger <= 0 || S.thirst <= 0) S.hp -= 1.4 * dt;
   else if (S.hunger > 40 && S.thirst > 40 && S.hp < 100) S.hp = Math.min(100, S.hp + 0.6 * dt);
   const warn = (k, v, msg) => { if (S[k] < v && !C['w' + k]) { C['w' + k] = 1; UI.toast(msg, 'err'); } else if (S[k] > v + 5) C['w' + k] = 0; };
+  if (RG.Life) RG.Life.needs(dt);
   warn('hunger', 20, 'Tu as faim : mange quelque chose.'); warn('thirst', 20, 'Tu as soif : bois quelque chose.');
   if (S.hp <= 0) Game.faint();
 }
 function movePlayer(dt) {
   let ax = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ay = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
   let run = keys.run;
-  if (!ax && !ay && ptr.on) {
+  if (!ax && !ay && ptr.on && !C.place) {
     const dx = ptr.x / scale + camX - P.x, dy = ptr.y / scale + camY - (P.y - 8), d = Math.hypot(dx, dy);
     if (d > 6) { ax = dx; ay = dy; if (d > 90) run = true; }
   }
@@ -192,10 +198,10 @@ function movePlayer(dt) {
   P.moving = len > 0;
   if (len > 0) {
     ax /= len; ay /= len;
-    if (run && S.stamina > 0 && !C.exhausted) S.stamina -= 24 * dt; else { run = false; }
+    if (run && S.stamina > 0 && !C.exhausted) S.stamina -= 24 * dt * (RG.Life ? RG.Life.staminaCost() : 1); else { run = false; }
     if (S.stamina <= 0) C.exhausted = true;
     if (C.exhausted && S.stamina > 25) C.exhausted = false;
-    const sp = run ? 84 : 52;
+    const sp = (run ? 84 : 52) * (RG.Life ? RG.Life.speedMul() : 1);
     const hw = 5, hh = 4;
     if (!W.hit(C.cur, P.x + ax * sp * dt, P.y, hw, hh)) P.x += ax * sp * dt;
     if (!W.hit(C.cur, P.x, P.y + ay * sp * dt, hw, hh)) P.y += ay * sp * dt;
@@ -243,6 +249,7 @@ function update(dt) {
   }
   if (C.mode !== 'play' || !C.cur) return;
   if (C.cur.name === 'casino') RG.Casino.update(dt);
+  if (RG.Life) RG.Life.update(dt);
   if (S.jail) { Game.updateJail(dt); return; }
   if (C.mini) { Game.updateMini(dt); return; }
   if (UI.isModal() || UI.dialogOpen() || f.dir !== 0) return;
@@ -279,6 +286,7 @@ function drawPerson(e, isPlayer) {
   const dir = isPlayer ? P.dir : e.dir;
   const spr = Sp.char(ap, dir, fr, isPlayer ? S.equip.mask : false);
   const x = Math.round(e.x), y = Math.round(e.y);
+  if (e.kid) { const k = e.baby ? 0.5 : 0.7; ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
   ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 2 - camY, 8, 1); ctx.fillRect(x - 6 - camX, y - 1 - camY, 12, 2); ctx.fillRect(x - 4 - camX, y + 1 - camY, 8, 1);
   if (e.stun > 0) {
     ctx.save(); ctx.translate(x - camX, y - camY - 2); ctx.rotate(Math.PI / 2); ctx.drawImage(spr, -16, -9); ctx.restore();
@@ -352,6 +360,7 @@ function render() {
   list.sort((a, b) => a.y - b.y);
   for (const it of list) it.d();
 
+  if (C.place && RG.Life) RG.Life.drawGhost(ctx, camX, camY);
   // pêche : flotteur
   if (C.fishing) {
     const f = C.fishing, bx = Math.round(f.x - camX), by = Math.round(f.y - camY);
@@ -441,6 +450,8 @@ Game.boot = () => {
   const gid = id => document.getElementById(id);
   gid('btn-bag').onclick = () => { if (C.mode === 'play' && !UI.isModal() && !UI.dialogOpen()) UI.inventory(); };
   gid('btn-quest').onclick = () => { if (C.mode === 'play' && !UI.isModal() && !UI.dialogOpen()) UI.quests(); };
+  gid('btn-friends').onclick = () => { if (C.mode === 'play' && !UI.isModal() && !UI.dialogOpen()) RG.Life.friends(); };
+  gid('btn-build').onclick = () => { if (C.mode === 'play' && !UI.isModal() && !UI.dialogOpen()) RG.Life.build(); };
   gid('btn-menu').onclick = () => { if (C.mode === 'play' && !UI.isModal() && !UI.dialogOpen()) UI.pause(); };
   resize();
   W.build();
