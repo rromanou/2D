@@ -16,6 +16,7 @@ L.init = () => {
   if (!S.home) S.home = { size: 0, wall: D.WALLS[0], floor: 0 };
   S.guest = null; S.fridgeT = S.fridgeT || 0;
   W.rebuildHome();
+  L.purgePartner();
 };
 L.needs = dt => {
   S.sleep = Math.max(0, S.sleep - 0.15 * dt);
@@ -143,7 +144,7 @@ L.panel = e => {
     title: 'Relation : ' + e.name, cls: 'rel',
     render: () => {
       const r = rel(e), lv = level(r.p), nx = LVP[Math.min(5, lv + 1)], pr = lv >= 4 ? 1 : (r.p - LVP[lv]) / (nx - LVP[lv]);
-      const guest = e.guest && S.guest;
+      const guest = e.guest && S.guest, isP = !!e.partner;
       let h = '<div class="av"><div class="avl"><canvas id="rl-port" width="90" height="160" style="width:90px;height:160px"></canvas></div><div class="avr">' +
         '<h3 class="rn2">' + esc(e.name) + (e.role ? ' <span class="tag">' + esc(e.role) + '</span>' : '') + '</h3>' +
         '<div class="rbar"><div style="width:' + Math.round(pr * 100) + '%"></div></div>' +
@@ -161,7 +162,9 @@ L.panel = e => {
           (lv >= 2 ? '<button data-a="time">Passer du temps (1 h)</button>' : '') +
           (lv >= 3 && !r.lover ? '<button data-a="flirt">Draguer</button>' : '') +
           (r.lover ? '<button data-a="kiss">Câlin</button>' : '') +
-          (r.lover && !guest ? '<button data-a="invite">Inviter chez moi</button>' : '') +
+          (r.lover && !guest && !isP ? '<button data-a="invite">Inviter chez moi</button>' : '') +
+          (r.lover && !isP && !e.guest && canMove(e) ? '<button data-a="movein" class="go">Emménager ensemble</button>' : '') +
+          (isP ? '<button data-a="night" class="go">Passer la nuit ensemble</button><button data-a="cook">Cuisiner ensemble</button><button data-a="baby">Parler du bébé</button>' + (S.kids.length ? '' : '<button data-a="moveout">Demander de partir</button>') : '') +
           (r.lover && !r.married && S.inv.bague > 0 && r.p >= 150 ? '<button data-a="propose" class="go">Demander en mariage</button>' : '') +
           (guest ? '<button data-a="night" class="go">Passer la nuit ensemble</button><button data-a="leave">Raccompagner</button>' : '') +
           '</div>';
@@ -205,6 +208,14 @@ L.panel = e => {
           if (r.p >= 150) { S.inv.bague--; r.married = 1; r.lover = 1; UI.closeModal(); UI.banner('Vous êtes mariés !', e.name); U.sfx('win'); UI.hotbarDirty && UI.hotbarDirty(); return; }
           break;
         case 'night': UI.closeModal(); L.night(e); return;
+        case 'movein': UI.closeModal(); L.moveIn(e); return;
+        case 'moveout': UI.closeModal(); L.moveOut(); return;
+        case 'cook': UI.closeModal(); S.inv.platmaison = (S.inv.platmaison || 0) + 1; UI.hotbarDirty && UI.hotbarDirty(); L.gain(e, 4); L.pass(25, { fun: 8 }, 'Vous avez cuisiné ensemble : un plat maison est dans ton sac.'); return;
+        case 'baby':
+          if (S.preg) say('« Il arrivera bientôt, je suis impatient(e) ! »');
+          else if (S.kids.length >= 4) say('« Notre famille est déjà bien grande ! »');
+          else say('« Pour un bébé... passons la nuit ensemble. »');
+          break;
       }
       m.refresh();
     }
@@ -218,13 +229,13 @@ L.night = e => {
   UI.say(e.name, ['La soirée est douce... vous restez longtemps à discuter, à rire, à vous rapprocher.', 'Puis la nuit tombe sur la maison.'], [], () => {
     L.gain(e, 10);
     L.sleep(() => {
-      L.removeGuest();
+      if (e.guest) L.removeGuest();
       const kids = S.kids.length + (S.preg ? 1 : 0);
       const chance = r.married ? 0.7 : 0.5;
       if (!S.preg && kids < 4 && Math.random() < chance) {
         S.preg = { key: keyOf(e), name: e.name, due: S.abs + 1440 * 2 };
         UI.say(e.name, ['J\'ai une grande nouvelle... nous allons avoir un bébé !', 'Il devrait arriver dans quelques jours.'], [], () => { UI.banner('Un bébé est en route !', e.name); });
-      } else UI.toast(e.name + ' est reparti(e) ce matin. Quelle belle nuit.', 'ok');
+      } else UI.toast(e.partner ? 'Belle nuit avec ' + e.name + '.' : e.name + ' est reparti(e) ce matin. Quelle belle nuit.', 'ok');
     });
   });
 };
@@ -234,33 +245,93 @@ L.birth = () => {
     UI.ask('Prénom du bébé', 'Bébé', nm => {
       S.kids.push({ name: nm, born: S.abs, parent: p.name, boy: Math.random() < 0.5, seed: Math.floor(Math.random() * 1e6) });
       UI.banner('Bienvenue, ' + nm + ' !', 'Il vous attend à la maison');
+      if (!S.partner) L.setPartner(p.key, p.name);
       L.enter('home', true); G.save();
     });
   });
 };
 const kidAge = k => Math.floor((S.abs - k.born) / 1440);
-const kidAp = k => { const a = Sp.randomAp(U.rng(k.seed)); a.hat = 0; a.glasses = 0; a.hair = k.boy ? 0 : 3; a.shirt = k.boy ? '#4b78c8' : '#f48fb1'; return a; };
+const STAGES = ['Bébé', 'Enfant', 'Ado', 'Adulte'], KSCALE = [0.5, 0.7, 0.88, 1];
+const kidStage = k => { const a = (S.abs - k.born) / 1440; return a < 1 ? 0 : a < 3 ? 1 : a < 6 ? 2 : 3; };
+L.kidStage = kidStage;
+const kidAp = (k, st) => {
+  const a = Sp.randomAp(U.rng(k.seed)); a.hat = 0; a.glasses = st >= 2 && k.seed % 3 === 0 ? 1 : 0;
+  if (k.boy) { a.hair = st >= 2 ? (k.seed % 2 ? 1 : 0) : 0; a.shirt = ['#4b78c8', '#4b78c8', '#3a9a6a', '#7a5a3a'][st]; }
+  else { a.hair = st >= 2 ? 4 : 3; a.shirt = ['#f48fb1', '#f48fb1', '#b46ad8', '#d85a5a'][st]; }
+  return a;
+};
+L.purgePartner = () => {
+  const p = S.partner; if (!p) return;
+  Object.keys(W.maps).forEach(n => { const m = W.maps[n]; if (m && m.ents && n !== 'home') m.ents = m.ents.filter(x => !(x.name === p.name && x.kind !== 'static' && !x.partner)); });
+};
+const canMove = e => e.kind !== 'static' && !S.partner;
+L.setPartner = (key, name) => {
+  const ent = Object.keys(W.maps).map(n => W.maps[n].ents.find(x => x.name === name && x.kind !== 'static')).find(Boolean);
+  const r = S.rel[key] || (S.rel[key] = { n: name, p: 0, d: -1, c: 0, fd: -1, lover: 1, married: 0 });
+  r.lover = 1;
+  S.partner = { key, name, ap: ent ? ent.ap : E.apFor(name), female: ent ? !!ent.female : E.FEM.has(name) };
+  L.purgePartner();
+};
+L.moveIn = e => {
+  if (S.partner) { UI.toast('Tu vis déjà avec ' + S.partner.name + '.', 'err'); return; }
+  UI.say(e.name, ['« Emménager ensemble ? Oui, avec plaisir ! »', e.name + ' ramène ses affaires. Désormais, ' + (e.female ? 'elle' : 'il') + ' sera toujours à la maison.'], [], () => {
+    L.setPartner(keyOf(e), e.name); S.guest = null; UI.banner('Vous vivez ensemble !', e.name); U.sfx('win'); L.gain(e, 5);
+    const hm = W.get('home'); G.go('home', hm.spawn.x, hm.spawn.y, 'up'); G.save();
+  });
+};
+L.moveOut = () => {
+  const p = S.partner; if (!p) return;
+  if (S.kids.length) { UI.toast(p.name + ' ne peut pas partir : vous avez des enfants.', 'err'); return; }
+  S.partner = null; const m = W.get('home'); if (m) m.ents = m.ents.filter(x => !x.partner);
+  const pm = W.get('plaza') || W.get('main'); if (pm) { const e = E.spawnWander(pm, pm.w >> 1, pm.h >> 1, 6, Math.random); e.name = p.name; e.ap = p.ap; e.female = p.female; }
+  UI.toast(p.name + ' est reparti(e) vivre ailleurs.', 'ok');
+};
+G.call = key => {
+  const r = S.rel[key]; if (!r || !r.lover) return;
+  if (S.partner && S.partner.key === key) { UI.toast(r.n + ' est déjà à la maison.'); return; }
+  if (S.guest) { UI.toast('Tu as déjà un invité.', 'err'); return; }
+  S.guest = { name: r.n, ap: E.apFor(r.n), key, female: E.FEM.has(r.n) };
+  UI.closeModal && UI.closeModal();
+  const hm = W.get('home'); G.go('home', hm.spawn.x, hm.spawn.y, 'up');
+};
 L.enter = (name, quiet) => {
-  if (name !== 'home') { if (S.guest) L.removeGuest(); return; }
+  if (name !== 'home') { if (S.guest) L.removeGuest(); L.purgePartner(); return; }
   const m = W.get('home'); if (!m) return;
-  m.ents = m.ents.filter(x => !x.kid && !x.guest);
+  m.ents = m.ents.filter(x => !x.kid && !x.guest && !x.partner);
   const rnd = Math.random;
   const spot = () => { for (let k = 0; k < 60; k++) { const tx = 2 + Math.floor(rnd() * (m.w - 4)), ty = 3 + Math.floor(rnd() * (m.h - 5)); if (!m.solid[ty * m.w + tx]) return { x: tx, y: ty }; } return { x: 4, y: 4 }; };
   S.kids.forEach(k => {
-    const s = spot(), e = E.spawnWander(m, s.x, s.y, 3, rnd);
-    e.name = k.name; e.ap = kidAp(k); e.kid = true; e.baby = kidAge(k) < 3; e.kidRef = k; e.indoor = true; e.spd = e.baby ? 0 : 14; e.ptype = e.ptype;
+    const st = kidStage(k), s = spot(), e = E.spawnWander(m, s.x, s.y, 3, rnd);
+    e.name = k.name; e.ap = kidAp(k, st); e.kid = true; e.stage = st; e.kscale = KSCALE[st]; e.baby = st === 0; e.kidRef = k; e.indoor = true; e.spd = st === 0 ? 0 : 14;
+    e.female = !k.boy;
   });
+  if (S.partner) { const s = spot(), e = E.spawnWander(m, s.x, s.y, 3, rnd); const p = S.partner; e.name = p.name; e.ap = p.ap; e.female = p.female; e.partner = true; e.indoor = true; e.spd = 8; }
   if (S.guest) { const s = spot(), e = E.spawnWander(m, s.x, s.y, 3, rnd); e.name = S.guest.name; e.ap = S.guest.ap; e.female = S.guest.female; e.guest = true; e.indoor = true; e.spd = 10; }
 };
 G.lifeEnter = L.enter;
 G.kidTalk = e => {
-  const k = e.kidRef, age = kidAge(k);
-  e.talk = 4;
-  UI.say(k.name, [e.baby ? (k.name + ' gazouille en te tendant les bras.') : pick(['Papa ! Maman ! On joue ?', 'J\'ai fait un dessin pour toi !', 'Regarde ce que je sais faire !', 'J\'ai faim...'])], [
-    { label: 'Jouer (30 min)', fn: () => L.pass(30, { fun: 18 }, 'Vous avez bien joué avec ' + k.name + '.') },
-    { label: 'Câliner', fn: () => { S.fun = Math.min(100, S.fun + 5); G.floater(e.x, e.y - 28, '<3', '#ff6aa0'); U.sfx('win'); } },
-    { label: 'Nourrir', fn: () => { const f = Object.keys(S.inv).find(i => S.inv[i] > 0 && D.ITEMS[i].k === 'food'); if (!f) { UI.toast('Tu n\'as rien à donner à manger.', 'err'); return; } S.inv[f]--; UI.hotbarDirty && UI.hotbarDirty(); UI.toast(k.name + ' mange avec appétit.', 'ok'); } },
-    { label: 'Au revoir' }]);
+  const k = e.kidRef, st = kidStage(k); e.talk = 4;
+  const lines = [
+    [k.name + ' gazouille en te tendant les bras.'],
+    ['Papa ! Maman ! On joue ?', 'J\'ai fait un dessin pour toi !', 'Regarde ce que je sais faire !', 'J\'ai faim...'],
+    ['Tu peux m\'aider pour mes devoirs ?', 'Les cours sont ennuyeux...', 'Tu me donnes de l\'argent de poche ?'],
+    ['Salut ! Tout va bien à la maison ?', 'Je pense à mon avenir, tu sais.', 'Je peux t\'aider si tu veux.']][st];
+  const food = () => { const f = Object.keys(S.inv).find(i => S.inv[i] > 0 && D.ITEMS[i].k === 'food'); if (!f) { UI.toast('Tu n\'as rien à donner à manger.', 'err'); return; } S.inv[f]--; UI.hotbarDirty && UI.hotbarDirty(); UI.toast(k.name + ' mange avec appétit.', 'ok'); };
+  const ch = [];
+  if (st <= 1) ch.push({ label: 'Jouer (30 min)', fn: () => L.pass(30, { fun: 18 }, 'Vous avez bien joué avec ' + k.name + '.') });
+  if (st <= 1) ch.push({ label: 'Câliner', fn: () => { S.fun = Math.min(100, S.fun + 5); G.floater(e.x, e.y - 28, '<3', '#ff6aa0'); U.sfx('win'); } });
+  if (st <= 1) ch.push({ label: 'Nourrir', fn: food });
+  if (st === 1) ch.push({ label: 'Aider aux devoirs (45 min)', fn: () => L.pass(45, { fun: 4, know: 3 }, 'Les devoirs sont faits avec ' + k.name + '.') });
+  if (st === 2) {
+    ch.push({ label: 'Discuter (30 min)', fn: () => L.pass(30, { fun: 12 }, 'Vous avez bien discuté avec ' + k.name + '.') });
+    ch.push({ label: 'Argent de poche (10 $)', fn: () => { if (S.money < 10) { UI.toast('Pas assez d\'argent.', 'err'); return; } S.money -= 10; G.floater(e.x, e.y - 28, '<3', '#ff6aa0'); UI.toast(k.name + ' te remercie.', 'ok'); } });
+  }
+  if (st === 3) {
+    ch.push({ label: 'Discuter (30 min)', fn: () => L.pass(30, { fun: 12 }, 'Belle discussion avec ' + k.name + '.') });
+    ch.push({ label: 'Demander un coup de main', fn: () => { if (k.help === S.day) { UI.toast(k.name + ' t\'a déjà aidé aujourd\'hui.'); return; } k.help = S.day; S.money += 50; U.sfx('coin'); UI.toast(k.name + ' te donne 50 $ de sa paie.', 'ok'); } });
+  }
+  ch.push({ label: 'Au revoir' });
+  UI.say(k.name + ' (' + STAGES[st] + ')', [pick(lines)], ch);
 };
 
 /* liste des relations */
@@ -270,12 +341,17 @@ L.friends = () => {
     render: () => {
       const arr = Object.keys(S.rel).map(k => S.rel[k]).filter(r => r.p >= 1 || r.lover).sort((a, b) => b.p - a.p);
       let h = '';
+      if (S.partner) h += '<div class="q"><b>Tu vis avec ' + esc(S.partner.name) + '.</b></div>';
       if (S.preg) h += '<div class="q"><b>Un bébé est attendu avec ' + esc(S.preg.name) + '.</b></div>';
-      if (S.kids.length) h += '<h4>Enfants</h4><div class="list">' + S.kids.map(k => '<div class="row"><div class="rn"><b>' + esc(k.name) + '</b><small>' + (kidAge(k) < 3 ? 'Bébé' : 'Enfant') + ' de ' + esc(k.parent) + ' - ' + kidAge(k) + ' jours</small></div></div>').join('') + '</div>';
+      if (S.kids.length) h += '<h4>Enfants</h4><div class="list">' + S.kids.map(k => '<div class="row"><div class="rn"><b>' + esc(k.name) + '</b><small>' + STAGES[kidStage(k)] + ' de ' + esc(k.parent) + ' - ' + kidAge(k) + ' jours</small></div></div>').join('') + '</div>';
       h += '<h4>Amis et connaissances</h4>';
       if (!arr.length) return h + '<p class="muted">Tu ne connais encore personne. Va sur la place du village et parle aux gens (E), puis choisis « Discuter ».</p>';
-      h += '<div class="list">' + arr.map(r => '<div class="row"><div class="rn"><b>' + esc(r.n) + '</b><small>' + esc(statusLabel(r)) + '</small></div><div class="rbar sm"><div style="width:' + Math.round(Math.min(1, r.p / 200) * 100) + '%"></div></div></div>').join('') + '</div>';
+      h += '<div class="list">' + arr.map(r => '<div class="row"><div class="rn"><b>' + esc(r.n) + '</b><small>' + esc(statusLabel(r)) + '</small></div><div class="rbar sm"><div style="width:' + Math.round(Math.min(1, r.p / 200) * 100) + '%"></div></div>' + (r.lover ? (S.partner && S.partner.name === r.n ? (S.kids.length ? '' : '<button class="btn" data-a="out">Faire partir</button>') : '<button class="btn" data-a="call" data-k="' + esc(Object.keys(S.rel).find(k => S.rel[k] === r)) + '">Appeler</button>') : '') + '</div>').join('') + '</div>';
       return h;
+    },
+    onAction: (a, b, m) => {
+      if (a === 'call') { G.call(b.dataset.k); return; }
+      if (a === 'out') { L.moveOut(); m.refresh(); }
     }
   });
 };
@@ -384,6 +460,10 @@ G.interact = () => { if (C.place) { L.placeClick(); return; } oldInteract(); };
 /* mise à jour continue */
 L.update = dt => {
   const b = document.getElementById('btn-build'); if (b) b.style.display = (C.cur && C.cur.name === 'home' && !C.place) ? '' : 'none';
+  if (S.kids.length && (C.__kt = (C.__kt || 0) + dt) > 2) {
+    C.__kt = 0;
+    S.kids.forEach(k => { const st = kidStage(k); if (k.st == null) k.st = st; if (st > k.st) { k.st = st; UI.banner(k.name + ' grandit !', 'Maintenant : ' + STAGES[st].toLowerCase()); U.sfx('win'); if (C.cur && C.cur.name === 'home') L.enter('home', true); } });
+  }
   if (S.guest && C.cur && C.cur.name !== 'home' && C.fade.dir === 0) L.removeGuest();
   if (S.preg && S.abs >= S.preg.due && C.mode === 'play' && !UI.isModal() && !UI.dialogOpen() && C.fade.dir === 0 && !S.jail) L.birth();
 };
