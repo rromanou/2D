@@ -454,11 +454,12 @@ C.init = map => {
   pokerInit();
   const used = new Set();
   const name = () => { let n; do { n = U.pick(BOTNAMES); } while (used.has(n)); used.add(n); return n; };
+  let nm0;
   const seats = map.seats;
   C.pokerEnts = [];
-  seats.rl.forEach(sp => { const e = E.make('deco', { name: name(), ap: Sp.randomAp(), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0 }); map.ents.push(e); rl.bots.push({ name: e.name, bets: [] }); });
-  seats.bj.forEach(sp => { const e = E.make('deco', { name: name(), ap: Sp.randomAp(), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0 }); map.ents.push(e); });
-  seats.poker.forEach((sp, i) => { const e = E.make('deco', { name: P.seats[i].name, ap: Sp.randomAp(), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0, seat: i }); map.ents.push(e); C.pokerEnts.push(e); });
+  seats.rl.forEach(sp => { const e = E.make('deco', { name: nm0 = name(), ap: E.apFor(nm0), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0 }); map.ents.push(e); rl.bots.push({ name: e.name, bets: [] }); });
+  seats.bj.forEach(sp => { const e = E.make('deco', { name: nm0 = name(), ap: E.apFor(nm0), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0 }); map.ents.push(e); });
+  seats.poker.forEach((sp, i) => { const e = E.make('deco', { name: P.seats[i].name, ap: E.apFor(P.seats[i].name), x: sp[0] * T + 8, y: sp[1] * T + 12, dir: sp[2], spd: 0, seat: i }); map.ents.push(e); C.pokerEnts.push(e); });
   rlNewRound(); rl.t = 12;
 };
 C.update = dt => {
