@@ -46,8 +46,8 @@ function drawChar(c, dir, f, ap, mask) {
   if (dir === 'down' || dir === 'up') {
     leg(5, l1); leg(8, l2);
     R(c, 4, oy + 11, 8, 7, shirt); R(c, 4, oy + 16, 8, 2, shirtS);
-    R(c, 2, oy + 12 + a1, 2, 5, shirt); R(c, 2, oy + 17 + a1, 2, 2, skin);
-    R(c, 12, oy + 12 + a2, 2, 5, shirt); R(c, 12, oy + 17 + a2, 2, 2, skin);
+    { const mu = ap.mus | 0; R(c, 2 - mu, oy + 12 + a1, 2 + mu, 5, shirt); R(c, 2 - mu, oy + 17 + a1, 2 + mu, 2, skin);
+      R(c, 12, oy + 12 + a2, 2 + mu, 5, shirt); R(c, 12, oy + 17 + a2, 2 + mu, 2, skin); }
     if (st === 5) { R(c, 1, oy - 3, 14, 8, hair); R(c, 1, oy + 5, 3, 5, hair); R(c, 12, oy + 5, 3, 5, hair); }
     R(c, 3, oy, 10, 11, skin);
     if (dir === 'down') {
@@ -131,7 +131,7 @@ function drawChar(c, dir, f, ap, mask) {
 }
 const charCache = {};
 Sp.char = (ap, dir, f, mask) => {
-  const key = [ap.skin, ap.hairC, ap.hair, ap.shirt, ap.pants, ap.hat, ap.glasses, ap.hatC || '', dir, f, mask ? 1 : 0].join('|');
+  const key = [ap.skin, ap.hairC, ap.hair, ap.shirt, ap.pants, ap.hat, ap.glasses, ap.hatC || '', dir, f, mask ? 1 : 0, ap.mus | 0].join('|');
   if (charCache[key]) return charCache[key];
   const raw = U.mk(16, 30);
   drawChar(raw.getContext('2d'), dir === 'right' ? 'left' : dir, f, ap, mask);
@@ -471,6 +471,11 @@ Sp.prop = function (c, kind, tx, ty, w, h, o) {
     case 'arcade': { const col = o.col || '#4b78c8'; R(c, x + 2, y, 12, 16, col); R(c, x + 2, y, 12, 2, U.shade(col, 40)); R(c, x + 4, y + 3, 8, 6, '#15151c'); R(c, x + 5, y + 4, 2, 2, '#ffe36a'); R(c, x + 8, y + 5, 3, 2, '#6fd36f'); R(c, x + 4, y + 10, 8, 3, '#2b2b33'); R(c, x + 5, y + 11, 2, 1, '#ff6a6a'); R(c, x + 9, y + 11, 2, 1, '#ffe36a'); break; }
     case 'floorlamp': R(c, x + 7, y + 5, 2, 10, '#55555f'); R(c, x + 4, y + 1, 8, 5, '#ffe9a0'); R(c, x + 4, y + 1, 8, 1, '#d8c070'); R(c, x + 5, y + 14, 6, 2, '#3b3b44'); break;
     case 'wardrobe': R(c, x + 1, y, 14, 16, '#7a4f30'); R(c, x + 2, y + 1, 6, 14, '#9a6a44'); R(c, x + 9, y + 1, 5, 14, '#9a6a44'); R(c, x + 7, y + 7, 1, 3, '#f4d06f'); R(c, x + 9, y + 7, 1, 3, '#f4d06f'); break;
+    case 'wallseg': R(c, x, y, 16, 16, '#d8cdb8'); R(c, x, y, 16, 3, '#efe6d4'); R(c, x, y + 13, 16, 3, '#a89c88'); R(c, x + 7, y + 3, 1, 10, '#c4b8a2'); break;
+    case 'doorseg': R(c, x + 2, y + 1, 12, 14, '#8b5a3c'); R(c, x + 3, y + 2, 10, 12, '#a8744c'); R(c, x + 10, y + 8, 2, 2, '#f4d06f'); break;
+    case 'toilet': R(c, x + 4, y + 2, 8, 5, '#e8f0f4'); R(c, x + 3, y + 7, 10, 6, '#f4f8fa'); R(c, x + 5, y + 9, 6, 3, '#9ac8d8'); R(c, x + 4, y + 13, 8, 2, '#c8d4d8'); R(c, x + 6, y + 3, 4, 1, '#b8c4c8'); break;
+    case 'shower': R(c, x + 1, y + 1, 14, 14, '#bcd8e4'); R(c, x + 2, y + 2, 12, 12, '#e4f4fa'); R(c, x + 7, y + 1, 2, 4, '#8898a0'); R(c, x + 5, y + 5, 6, 1, '#6fc8e8'); for (let i = 0; i < 4; i++) R(c, x + 4 + i * 3, y + 8 + (i % 2) * 2, 1, 3, '#7fd0f0'); break;
+    case 'bath': R(c, x + 1, y + 4, 30, 12, '#f4f8fa'); R(c, x + 3, y + 6, 26, 8, '#8fd0e8'); R(c, x + 1, y + 4, 30, 2, '#d8e4e8'); R(c, x + 24, y + 1, 3, 4, '#8898a0'); R(c, x + 6, y + 8, 3, 2, '#fff'); break;
     case 'crib': R(c, x + 1, y + 3, 14, 12, '#e8d8b0'); R(c, x + 2, y + 6, 12, 8, '#f48fb1'); R(c, x + 3, y + 5, 5, 3, '#fff7e6'); for (let i = 0; i < 14; i += 3) R(c, x + 1 + i, y + 3, 1, 4, '#c8b080'); break;
     case 'popcorn': R(c, x + 3, y + 4, 10, 11, '#fff'); for (let i = 0; i < 5; i++) R(c, x + 3 + i * 2, y + 4, 1, 11, '#c8403a'); R(c, x + 3, y + 2, 10, 3, '#fff3a0'); break;
     case 'screen': R(c, x, y + 2, W, 14, '#2b2b33'); R(c, x + 2, y + 4, W - 4, 10, '#e8f0f8'); R(c, x + 4, y + 6, W - 8, 3, '#bcd0e8'); break;
