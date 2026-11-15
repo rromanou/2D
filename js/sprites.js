@@ -460,6 +460,22 @@ Sp.prop = function (c, kind, tx, ty, w, h, o) {
       R(c, x + W / 2 - 1, y + H / 2 - 14, 2, 14, '#bfe9f6');
       break;
     }
+    case 'fridge': R(c, x + 2, y + 1, 12, 15, '#e8eef2'); R(c, x + 2, y + 1, 12, 1, '#fff'); R(c, x + 2, y + 7, 12, 1, '#a8b4bc'); R(c, x + 11, y + 3, 1, 3, '#7a858c'); R(c, x + 11, y + 10, 1, 4, '#7a858c'); R(c, x + 2, y + 15, 12, 1, '#8a949c'); break;
+    case 'stove': R(c, x + 1, y + 3, 14, 13, '#6a707c'); R(c, x + 1, y + 3, 14, 4, '#3a3e48'); R(c, x + 3, y + 4, 3, 2, '#c8503f'); R(c, x + 9, y + 4, 3, 2, '#c8503f'); R(c, x + 3, y + 9, 10, 5, '#2a2e38'); R(c, x + 4, y + 10, 8, 3, '#8a909c'); break;
+    case 'bookshelf': R(c, x, y, W, 16, '#6a4128'); R(c, x + 1, y + 1, W - 2, 14, '#8a5a3a'); for (let i = 0; i < W / 3; i++) { R(c, x + 2 + i * 3, y + 2, 2, 5, ['#c8503f', '#4b78c8', '#e8a93b', '#6fbf5a', '#8a63c9'][(i + tx) % 5]); R(c, x + 2 + i * 3, y + 9, 2, 5, ['#4b78c8', '#e8a93b', '#c8503f', '#8a63c9', '#6fbf5a'][(i + tx) % 5]); } R(c, x + 1, y + 8, W - 2, 1, '#4a2e1a'); break;
+    case 'piano': R(c, x, y + 1, W, 15, '#2a2a30'); R(c, x + 1, y + 2, W - 2, 6, '#3a3a44'); R(c, x + 1, y + 9, W - 2, 5, '#f4f0e4'); for (let i = 3; i < W - 1; i += 4) R(c, x + i, y + 9, 1, 5, '#222'); R(c, x + 1, y + 14, W - 2, 2, '#15151c'); break;
+    case 'console': R(c, x + 1, y + 2, 14, 9, '#2b2b33'); R(c, x + 2, y + 3, 12, 7, '#5cb4d8'); R(c, x + 4, y + 4, 4, 3, '#cfeefa'); R(c, x + 3, y + 12, 10, 3, '#c8503f'); R(c, x + 5, y + 13, 2, 1, '#fff'); R(c, x + 9, y + 13, 2, 1, '#6fd36f'); break;
+    case 'tvset': R(c, x + 1, y + 2, W - 2, 9, '#2b2b33'); R(c, x + 3, y + 3, W - 6, 7, '#5cb4d8'); R(c, x + 5, y + 4, 6, 3, '#cfeefa'); R(c, x + 2, y + 11, W - 4, 4, '#8a5a3a'); R(c, x + 2, y + 11, W - 4, 1, '#b07a50'); break;
+    case 'treadmill': R(c, x + 2, y + 6, 12, 9, '#33333b'); R(c, x + 3, y + 8, 10, 5, '#6a6a75'); R(c, x + 3, y + 2, 10, 5, '#8a8a95'); R(c, x + 5, y + 3, 6, 2, '#6fd36f'); R(c, x + 3, y + 7, 1, 3, '#c8503f'); break;
+    case 'weights': R(c, x + 1, y + 9, 14, 3, '#4a4a55'); R(c, x + 1, y + 6, 3, 9, '#222'); R(c, x + 12, y + 6, 3, 9, '#222'); R(c, x + 5, y + 2, 6, 3, '#8a8a95'); break;
+    case 'arcade': { const col = o.col || '#4b78c8'; R(c, x + 2, y, 12, 16, col); R(c, x + 2, y, 12, 2, U.shade(col, 40)); R(c, x + 4, y + 3, 8, 6, '#15151c'); R(c, x + 5, y + 4, 2, 2, '#ffe36a'); R(c, x + 8, y + 5, 3, 2, '#6fd36f'); R(c, x + 4, y + 10, 8, 3, '#2b2b33'); R(c, x + 5, y + 11, 2, 1, '#ff6a6a'); R(c, x + 9, y + 11, 2, 1, '#ffe36a'); break; }
+    case 'floorlamp': R(c, x + 7, y + 5, 2, 10, '#55555f'); R(c, x + 4, y + 1, 8, 5, '#ffe9a0'); R(c, x + 4, y + 1, 8, 1, '#d8c070'); R(c, x + 5, y + 14, 6, 2, '#3b3b44'); break;
+    case 'wardrobe': R(c, x + 1, y, 14, 16, '#7a4f30'); R(c, x + 2, y + 1, 6, 14, '#9a6a44'); R(c, x + 9, y + 1, 5, 14, '#9a6a44'); R(c, x + 7, y + 7, 1, 3, '#f4d06f'); R(c, x + 9, y + 7, 1, 3, '#f4d06f'); break;
+    case 'crib': R(c, x + 1, y + 3, 14, 12, '#e8d8b0'); R(c, x + 2, y + 6, 12, 8, '#f48fb1'); R(c, x + 3, y + 5, 5, 3, '#fff7e6'); for (let i = 0; i < 14; i += 3) R(c, x + 1 + i, y + 3, 1, 4, '#c8b080'); break;
+    case 'popcorn': R(c, x + 3, y + 4, 10, 11, '#fff'); for (let i = 0; i < 5; i++) R(c, x + 3 + i * 2, y + 4, 1, 11, '#c8403a'); R(c, x + 3, y + 2, 10, 3, '#fff3a0'); break;
+    case 'screen': R(c, x, y + 2, W, 14, '#2b2b33'); R(c, x + 2, y + 4, W - 4, 10, '#e8f0f8'); R(c, x + 4, y + 6, W - 8, 3, '#bcd0e8'); break;
+    case 'stool': R(c, x + 4, y + 5, 8, 3, '#c8503f'); R(c, x + 7, y + 8, 2, 6, '#55555f'); R(c, x + 5, y + 14, 6, 1, '#55555f'); break;
+    case 'oven': R(c, x + 1, y + 2, W - 2, 14, '#9a6a44'); R(c, x + 3, y + 5, W - 6, 8, '#2a1a10'); R(c, x + 5, y + 7, W - 10, 4, '#e8a030'); break;
     case 'wallwindow': R(c, x + 2, y + 4, 12, 12, '#fff7e6'); R(c, x + 3, y + 5, 10, 10, '#9fd8f0'); R(c, x + 7, y + 5, 2, 10, '#fff7e6'); break;
     case 'poster': R(c, x + 3, y + 3, 10, 13, o.col || '#d65fa3'); R(c, x + 4, y + 4, 8, 4, '#fff7e6'); R(c, x + 5, y + 10, 6, 1, '#fff7e6'); break;
     case 'neon': R(c, x + 1, y + 4, W - 2, 8, '#15151c'); R(c, x + 2, y + 5, W - 4, 6, o.col || '#ff4fa0'); R(c, x + 3, y + 6, W - 6, 4, '#15151c'); break;
