@@ -60,6 +60,7 @@ D.SHOPS = {
   hardware: { title: 'Quincaillerie',      items: ['canne', 'hache'] },
   black:    { title: 'Marché noir',        items: ['couteau', 'pistolet', 'fusil', 'balles', 'cagoule', 'pied', 'crochets'] },
   studio:   { title: 'Atelier Style',      items: ['hat_1', 'hat_2', 'hat_3', 'hat_4', 'hat_5', 'gl_1', 'gl_2'] },
+  pizz:     { title: 'Pizzeria',           items: ['burger', 'gateau', 'biere', 'cafe', 'lait'] },
   pet:      { title: 'Animalerie',         items: ['pet_chien', 'pet_chat', 'pet_lapin', 'pet_poule'] }
 };
 
@@ -70,6 +71,9 @@ D.JOBS = {
   caissier: { n: 'Caissier', place: 'Supermarché', pay: [22, 34], d: 'Passe les articles des clients à la caisse du supermarché (poste de caisse, au fond à droite).' },
   livreur:  { n: 'Livreur', place: 'Bureau de poste', pay: [55, 90], d: 'Prends un colis au bureau de poste puis livre-le à la bonne adresse avant la fin du temps imparti.' },
   pecheur:  { n: 'Pêcheur', place: 'Lac', pay: [14, 38], need: 'canne', d: 'Pêche au bord de l\'eau avec ta canne : chaque prise est vendue sur place.' },
+  serveur:  { n: 'Serveur', place: 'Restaurant', pay: [26, 40], d: 'Prends les commandes et sers les clients au restaurant (zone de service près des tables).' },
+  biblio:   { n: 'Bibliothécaire', place: 'Bibliothèque', pay: [24, 36], d: 'Range les livres par ordre alphabétique à la bibliothèque.' },
+  barman:   { n: 'Barman', place: 'Bar', pay: [28, 46], d: 'Prépare des cocktails au comptoir du bar.' },
   bucheron: { n: 'Bûcheron', place: 'Forêt', pay: [20, 32], need: 'hache', d: 'Coupe les arbres de la forêt avec ta hache : chaque bûche est payée.' }
 };
 
@@ -268,6 +272,13 @@ D.FURN = {
   floorlamp: { n: 'Lampe',             p: 30,   w: 1, h: 1, k: 'floorlamp', d: 'Décoration.' },
   rug1:      { n: 'Tapis bleu',        p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#6fa8dc' }, flat: 1, d: 'Au sol.' },
   rug2:      { n: 'Tapis rouge',       p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#c8503f' }, flat: 1, d: 'Au sol.' },
+  toilet:    { n: 'Toilettes',         p: 90,   w: 1, h: 1, k: 'toilet', fn: 'wc', d: 'Pour répondre à l\'appel de la nature.' },
+  shower:    { n: 'Douche',            p: 220,  w: 1, h: 1, k: 'shower', fn: 'shower', d: 'Hygiène rapide.' },
+  bath:      { n: 'Baignoire',         p: 380,  w: 2, h: 1, k: 'bath', fn: 'bath', d: 'Bain relaxant : hygiène et détente.' },
+  wallseg:   { n: 'Mur (cloison)',     p: 15,   w: 1, h: 1, k: 'wallseg', solid: 1, d: 'Pour créer des pièces.' },
+  doorseg:   { n: 'Porte intérieure',  p: 35,   w: 1, h: 1, k: 'doorseg', flat: 1, d: 'Passage dans une cloison.' },
+  sofa3:     { n: 'Canapé d\'angle',   p: 260,  w: 3, h: 1, k: 'sofa', o: { col: '#d8708a' }, fn: 'sofa', d: 'Trois places roses.' },
+  tvbig:     { n: 'Télé géante',       p: 650,  w: 2, h: 1, k: 'tvset', fn: 'tv', d: 'Cinéma maison.' },
   rug3:      { n: 'Tapis vert',        p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#4f9a5a' }, flat: 1, d: 'Au sol.' }
 };
 D.HOME_SIZES = [
@@ -300,6 +311,12 @@ Object.assign(D.NPCS, {
     intro: ['Arcade ! Deux dollars la partie. Gagne des prix si tu es doué.'], lines: ['Mon record, c\'est trois mille points.', 'Jouer, c\'est la meilleure détente.'] },
   mario:   { name: 'Mario', role: 'Barman', ap: A('#e5ae7e', '#2b1b14', 0, '#8b4a5a', '#15151c', 0, 0),
     intro: ['Bienvenue au bar ! Qu\'est-ce que je te sers ?'], lines: ['Un cocktail et la soirée est lancée.', 'Il y a de la musique à la piste de danse.'], menu: ['shop:bar'] },
+  bijoutier:{ name: 'Mme Vachon', role: 'Bijoutière', ap: A('#f7cfa5', '#9a9a9a', 1, '#6a2a5a', '#2b2b33', 0, 1),
+    intro: ['Bienvenue à la Bijouterie. Ici, tout brille.'], lines: ['Une bague pour la personne que vous aimez ?', 'Les caméras fonctionnent très bien, vous savez.'], menu: ['shop:gifts'], robbable: { min: 700, max: 2200, heat: 3, need: 2, cd: 900, name: 'la bijouterie' } },
+  juge:    { name: 'Juge Fortin', role: 'Juge aux affaires familiales', ap: A('#e5ae7e', '#8a8a8a', 0, '#2b2b33', '#2b2b33', 0, 1),
+    intro: ['Tribunal des familles. Mariages en difficulté, séparations : je m\'en occupe.'], lines: ['Réfléchissez bien avant de signer.', 'Les enfants restent toujours à la maison familiale.'], menu: ['divorce'] },
+  pizzaiolo:{ name: 'Gino', role: 'Pizzaiolo', ap: A('#f7cfa5', '#2b1b14', 2, '#f2f2ee', '#c8503f', 1, 0),
+    intro: ['Ciao ! Les meilleures pizzas du village !'], lines: ['La pâte, c\'est un art.', 'Une part ?'], menu: ['shop:pizz'], robbable: { min: 90, max: 280, heat: 2, need: 1, cd: 420, name: 'la pizzeria' } },
   boulanger:{ name: 'Rosalie', role: 'Boulangère', ap: A('#f7cfa5', '#6a4126', 1, '#f2f2ee', '#c8a070', 0, 0),
     intro: ['Bonjour ! Le pain sort du four.'], lines: ['Mes croissants partent toujours en premier.', 'Un gâteau pour une occasion spéciale ?'], menu: ['shop:bakery'] }
 });
