@@ -46,6 +46,7 @@ UI.hud = S => {
   el.hunger.style.width = Math.max(0, S.hunger) + '%'; el.thirst.style.width = Math.max(0, S.thirst) + '%';
   el.hp.style.width = Math.max(0, S.hp) + '%'; el.stam.style.width = Math.max(0, S.stamina) + '%';
   if (el.sleep) { el.sleep.style.width = Math.max(0, S.sleep == null ? 100 : S.sleep) + '%'; el.fun.style.width = Math.max(0, S.fun == null ? 100 : S.fun) + '%'; el.sleep.parentNode.parentNode.classList.toggle('low', S.sleep < 20); el.fun.parentNode.parentNode.classList.toggle('low', S.fun < 15); }
+  { const bp = $('b-pee'), bh = $('b-hyg'); if (bp) { bp.style.width = Math.max(0, S.bladder == null ? 100 : S.bladder) + '%'; bh.style.width = Math.max(0, S.hyg == null ? 100 : S.hyg) + '%'; bp.parentNode.parentNode.classList.toggle('low', S.bladder < 20); bh.parentNode.parentNode.classList.toggle('low', S.hyg < 20); } }
   el.hunger.parentNode.classList.toggle('low', S.hunger < 20); el.thirst.parentNode.classList.toggle('low', S.thirst < 20);
   const j = S.job ? D.JOBS[S.job.id] : null;
   el.job.textContent = j ? j.n + ' (niv. ' + (1 + Math.floor(((S.jobxp && S.jobxp[S.job.id]) || 0) / 8)) + ')' : 'Sans emploi';
@@ -160,12 +161,13 @@ UI.itemAction = id => {
   if (it.k === 'drink') return { a: 'use', l: 'Boire' };
   if (it.k === 'weapon') return { a: 'eq', l: S.equip.weapon === id ? 'Ranger' : 'Équiper' };
   if (it.k === 'mask') return { a: 'mask', l: S.equip.mask ? 'Retirer' : 'Mettre' };
-  return null;
+  return { a: 'hold', l: S.equip.hand === id ? 'Ranger' : 'Tenir en main' };
 };
 UI.useSlot = id => {
   const act = UI.itemAction(id); if (!act) { const it = D.ITEMS[id]; UI.toast(it.n + ' : rien à faire ici.'); return; }
   if (act.a === 'use') RG.Game.useItem(id);
   else if (act.a === 'eq') { RG.Game.equipWeapon(id); U.sfx('click'); }
+  else if (act.a === 'hold') { RG.Game.holdItem(id); U.sfx('click'); }
   else RG.Game.toggleMask();
   UI.hotbarDirty();
 };
@@ -180,7 +182,7 @@ UI.inventory = () => {
       if (!ids.length) return h + '<p class="muted">Ton sac est vide.</p>';
       h += '<div class="bag"><div class="grid">';
       for (const id of ids) {
-        const eq = S.equip.weapon === id || (D.ITEMS[id].k === 'mask' && S.equip.mask);
+        const eq = S.equip.weapon === id || S.equip.hand === id || (D.ITEMS[id].k === 'mask' && S.equip.mask);
         h += '<div class="cell' + (id === selItem ? ' sel' : '') + (eq ? ' eq' : '') + '" data-a="sel" data-i="' + id + '">' + RG.Icons.img(id, '') + '<span class="n">' + S.inv[id] + '</span></div>';
       }
       h += '</div><div class="info">';
@@ -200,6 +202,7 @@ UI.inventory = () => {
       if (a === 'sel') { selItem = b.dataset.i; U.sfx('click'); }
       else if (a === 'use') { RG.Game.useItem(b.dataset.i); if (b.dataset.x) RG.Game.useItem(b.dataset.i); }
       else if (a === 'eq') RG.Game.equipWeapon(b.dataset.i);
+      else if (a === 'hold') RG.Game.holdItem(b.dataset.i);
       else if (a === 'mask') RG.Game.toggleMask();
       UI.hotbarDirty(); m.refresh();
     }
