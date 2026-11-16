@@ -186,10 +186,10 @@ function buildInterior(name, def) {
   m.doors.push({ x: dx, y: dy, exit: true });
   m.spawn = { x: dx * T + 8, y: (dy - 1) * T + 12 };
   // décor : tapis d'abord
-  for (const p of def.props) if (p.flat) Sp.prop(c, p.k, p.x, p.y, p.w || 1, p.h || 1, p.o);
+  for (const p of def.props) if (p.flat) Sp.propRot(c, p.k, p.x, p.y, p.w0 || p.w || 1, p.h0 || p.h || 1, p.o, p.r);
   for (const p of def.props) {
     if (p.flat) continue;
-    Sp.prop(c, p.k, p.x, p.y, p.w || 1, p.h || 1, p.o);
+    Sp.propRot(c, p.k, p.x, p.y, p.w0 || p.w || 1, p.h0 || p.h || 1, p.o, p.r);
     if (p.k === 'mirror' || p.k === 'poster' || p.k === 'board' || p.k === 'neon' || p.k === 'tv' || p.k === 'screen') continue;
     const w = p.w || 1, h = p.k === 'plant' || p.k === 'chest' || p.k === 'crate' || p.k === 'barrel' ? 1 : (p.h || 1);
     rectSolid(m, p.x, p.y, w, h, 1);
@@ -233,9 +233,9 @@ const MAIN_B2 = [
   { id: 'arcade', bx: 66, w: 7, o: { kind: 'shop', text: 'ARCADE', signBg: '#2b2540', signFg: '#4fd8ff', extra: 'lights', awn: ['#4b78c8', '#ffd54f'], wall: '#4a4570' } },
   { id: 'bar',    bx: 74, w: 7, o: { kind: 'shop', text: 'BAR', signBg: '#4a3238', signFg: '#ffd54f', awn: ['#8a2a5a', '#ffd54f'], wall: '#6a4a52' } },
   { id: 'bakery', bx: 82, w: 7, o: { kind: 'shop', text: 'BOULANGERIE', signBg: '#c89a4a', signFg: '#2b1b14', awn: ['#e8a93b', '#fff7e6'], wall: '#f6e4cc' } },
-  { id: 'bijou', bx: 91, w: 7, o: { kind: 'shop', text: 'BIJOUTERIE', signBg: '#6a2a5a', signFg: '#ffe9a8', extra: 'lights', awn: ['#8a2a5a', '#f8f0f4'], wall: '#f0e4ec' } },
-  { id: 'tribunal', bx: 99, w: 8, o: { kind: 'shop', text: 'TRIBUNAL', signBg: '#4a4a52', extra: 'columns', awn: ['#6a6a72', '#d8d0c0'], wall: '#d8d0c0' } },
-  { id: 'pizz', bx: 108, w: 7, o: { kind: 'shop', text: 'PIZZERIA', signBg: '#a8302a', awn: ['#4fb04f', '#fff7e6'], wall: '#f4d8c0' } }
+  { id: 'bijou', bx: 97, w: 7, o: { kind: 'shop', text: 'BIJOUTERIE', signBg: '#6a2a5a', signFg: '#ffe9a8', extra: 'lights', awn: ['#8a2a5a', '#f8f0f4'], wall: '#f0e4ec' } },
+  { id: 'tribunal', bx: 105, w: 8, o: { kind: 'shop', text: 'TRIBUNAL', signBg: '#4a4a52', extra: 'columns', awn: ['#6a6a72', '#d8d0c0'], wall: '#d8d0c0' } },
+  { id: 'pizz', bx: 114, w: 7, o: { kind: 'shop', text: 'PIZZERIA', signBg: '#a8302a', awn: ['#4fb04f', '#fff7e6'], wall: '#f4d8c0' } }
 ];
 const HWALLS = ['#f3e4c2', '#e8d8b8', '#dfe8d0', '#e6dcee', '#f0d8d0', '#d8e8f0'];
 const HROOFS = ['#c8503f', '#4b78c8', '#6a8f4f', '#8a63c9', '#b8803a', '#3fa9a0'];
@@ -251,7 +251,7 @@ function buildOutdoor() {
   for (const ry of [22, 44, 66]) rectFill(m, 2, ry, 124, 2, PV);
   rectFill(m, 56, 40, 14, 14, PV);
   // routes
-  for (const ry of [24, 46, 68]) rectFill(m, 2, ry, 124, 2, RD);
+  for (const ry of [24, 35, 46, 68]) rectFill(m, 2, ry, 124, 2, RD);
   for (const rx of [30, 62, 94]) rectFill(m, rx, 2, 2, 92, RD);
   rectFill(m, 56, 40, 14, 14, PV);
   // 2. lac, sable, ponton
@@ -473,17 +473,18 @@ World.makeMini = m => {
 World.homeDef = () => {
   const D = RG.Data, S = RG.S || {}, H = S.home || { size: 0, wall: D.WALLS[0], floor: 0 };
   const sz = D.HOME_SIZES[H.size || 0], fl = D.FLOORS[H.floor || 0] || D.FLOORS[0];
-  const furn = S.furn || D.DEFAULT_FURN, props = [], zones = [];
-  const LAB = { sleep: 'Dormir', sofa: 'Se détendre sur le canapé', tv: 'Regarder la télé', console: 'Jouer à la console', piano: 'Jouer du piano', read: 'Lire un livre', fridge: 'Ouvrir le frigo', cook: 'Cuisiner', mirror: 'Changer de tenue', stash: 'Ouvrir le coffre', gym: 'Faire de l\'exercice' };
+  const furn = S.furn || D.DEFAULT_FURN, props = [], zones = [], doors = [];
+  const LAB = { sleep: 'Dormir', sofa: 'Se détendre sur le canapé', tv: 'Regarder la télé', console: 'Jouer à la console', piano: 'Jouer du piano', read: 'Lire un livre', fridge: 'Ouvrir le frigo', cook: 'Cuisiner', mirror: 'Changer de tenue', stash: 'Ouvrir le coffre', gym: 'Faire de l\'exercice', wc: 'Utiliser les toilettes', shower: 'Prendre une douche', bath: 'Prendre un bain', door: 'Régler les accès de la porte' };
   const FN = { bed: 'sleep', bedlux: 'sleep', tvset: 'tv' };
   const dxd = Math.floor(sz.w / 2);
   furn.forEach((f, i) => {
     const F = D.FURN[f.id]; if (!F) return;
-    const fw = f.r ? F.h : F.w, fh = f.r ? F.w : F.h;
-    props.push({ k: F.k, x: f.x, y: f.y, w: fw, h: fh, o: F.o, flat: F.flat });
+    const rr = (f.r | 0) % 4, fw = rr & 1 ? F.h : F.w, fh = rr & 1 ? F.w : F.h;
+    props.push({ k: F.k, x: f.x, y: f.y, w: fw, h: fh, w0: F.w, h0: F.h, r: rr, o: F.o, flat: F.flat });
+    if (F.k === 'doorseg') doors.push({ x: f.x, y: f.y, idx: i });
     if (F.fn && f.y + fh <= sz.h - 2) zones.push({ x: f.x, y: f.y + fh, w: fw, h: 1, action: 'furn', label: LAB[F.fn], data: { fn: F.fn, idx: i } });
   });
-  return { title: 'Chez moi', w: sz.w, h: sz.h, floor: fl.id, floorC: fl.c, wall: H.wall || D.WALLS[0], props, zones, npcs: [] };
+  return { title: 'Chez moi', w: sz.w, h: sz.h, floor: fl.id, floorC: fl.c, wall: H.wall || D.WALLS[0], props, zones, npcs: [], doors };
 };
 World.rebuildHome = () => {
   const old = World.maps.home, m = buildInterior('home', World.homeDef());
