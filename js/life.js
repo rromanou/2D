@@ -362,12 +362,12 @@ L.friends = () => {
 /*  Meubles : boutique, aménagement, placement                         */
 /* ------------------------------------------------------------------ */
 const fcache = {};
-const dim = (F, r) => r ? { w: F.h, h: F.w } : { w: F.w, h: F.h };
+const dim = (F, r) => (r | 0) & 1 ? { w: F.h, h: F.w } : { w: F.w, h: F.h };
 L.furnIcon = (id, r) => {
-  const key = id + (r ? '@' : '');
+  r = (r | 0) % 4; const key = id + '@' + r;
   if (fcache[key]) return fcache[key];
   const F = D.FURN[id], d = dim(F, r), cv = U.mk(d.w * 16, d.h * 16), c = cv.getContext('2d');
-  Sp.prop(c, F.k, 0, 0, d.w, d.h, F.o);
+  Sp.propRot(c, F.k, 0, 0, F.w, F.h, F.o, r);
   return (fcache[key] = cv);
 };
 L.furnImg = id => { const F = D.FURN[id], cv = L.furnIcon(id); return '<img class="fi" src="' + cv.toDataURL() + '" style="width:' + (cv.width * 2) + 'px;height:' + (cv.height * 2) + 'px" alt="">'; };
@@ -395,7 +395,7 @@ function fits(id, x, y, ignore, r) {
     for (let j = 0; j < F.h; j++) for (let i = 0; i < F.w; i++) { const tx = x + i, ty = y + j; if (tx === dx && ty >= sz.h - 3) return false; }
   }
   for (let k = 0; k < S.furn.length; k++) {
-    if (k === ignore) continue; const f = S.furn[k], O0 = D.FURN[f.id]; if (!O0) continue; const O = dim(O0, f.r); O.flat = O0.flat;
+    if (k === ignore) continue; const f = S.furn[k], O0 = D.FURN[f.id]; if (!O0) continue; const O = dim(O0, f.r | 0); O.flat = O0.flat;
     if (F.flat !== O.flat && (F.flat || O.flat)) continue; // tapis sous les meubles
     if (x < f.x + O.w && x + F.w > f.x && y < f.y + O.h && y + F.h > f.y) return false;
   }
@@ -413,7 +413,7 @@ L.build = () => {
         const ids = Object.keys(S.furnInv).filter(k => S.furnInv[k] > 0);
         h += ids.length ? '<div class="list">' + ids.map(id => '<div class="row">' + L.furnImg(id) + '<div class="rn"><b>' + esc(D.FURN[id].n) + '</b> x' + S.furnInv[id] + '</div><button class="go" data-a="place" data-i="' + id + '">Placer</button></div>').join('') + '</div>' : '<p class="muted">Ton stock est vide. Achète des meubles chez Meubles & Cie (rue du nord).</p>';
       } else if (tab === 'placed') {
-        h += S.furn.length ? '<div class="list">' + S.furn.map((f, i) => '<div class="row">' + L.furnImg(f.id) + '<div class="rn"><b>' + esc(D.FURN[f.id].n) + '</b></div><button data-a="store" data-i="' + i + '">Ranger</button></div>').join('') + '</div>' : '<p class="muted">Rien n\'est posé.</p>';
+        h += S.furn.length ? '<div class="list">' + S.furn.map((f, i) => '<div class="row">' + L.furnImg(f.id) + '<div class="rn"><b>' + esc(D.FURN[f.id].n) + '</b></div><button data-a="rot" data-i="' + i + '">Pivoter</button><button data-a="store" data-i="' + i + '">Ranger</button></div>').join('') + '</div>' : '<p class="muted">Rien n\'est posé.</p>';
       } else if (tab === 'deco') {
         h += '<h4>Murs (50 $)</h4><div class="sw">' + D.WALLS.map(c => '<button class="c' + (S.home.wall === c ? ' sel' : '') + '" style="background:' + c + '" data-a="wall" data-v="' + c + '"></button>').join('') + '</div>' +
           '<h4>Sol (80 $)</h4><div class="brow">' + D.FLOORS.map((f, i) => '<button data-a="floor" data-i="' + i + '"' + (S.home.floor === i ? ' class="go"' : '') + '>' + f.n + '</button>').join('') + '</div>';
@@ -425,6 +425,7 @@ L.build = () => {
     onAction: (a, b, m) => {
       if (a === 'tab') tab = b.dataset.i;
       else if (a === 'place') { UI.closeModal(); L.startPlace(b.dataset.i); return; }
+      else if (a === 'rot') { const f = S.furn[+b.dataset.i], nr = ((f.r | 0) + 1) % 4; if (fits(f.id, f.x, f.y, +b.dataset.i, nr)) { f.r = nr; L.rebuild(); } else UI.toast('Pas la place pour pivoter ici.', 'err'); }
       else if (a === 'store') { const f = S.furn.splice(+b.dataset.i, 1)[0]; S.furnInv[f.id] = (S.furnInv[f.id] || 0) + 1; L.rebuild(); }
       else if (a === 'wall') { if (S.home.wall !== b.dataset.v && pay(50)) { S.home.wall = b.dataset.v; L.rebuild(); } }
       else if (a === 'floor') { const i = +b.dataset.i; if (S.home.floor !== i && pay(80)) { S.home.floor = i; L.rebuild(); } }
@@ -439,11 +440,11 @@ L.build = () => {
 G.openBuild = L.build;
 L.startPlace = id => { C.place = { id, r: 0, tx: Math.floor(RG.P.x / T), ty: Math.floor(RG.P.y / T) - 1, ok: false }; L.placeMove(C.place.tx, C.place.ty); };
 L.placeMove = (tx, ty) => { const p = C.place; if (!p) return; p.tx = tx; p.ty = ty; p.ok = fits(p.id, tx, ty, -1, p.r); };
-L.rotatePlace = () => { const p = C.place; if (!p) return; p.r = p.r ? 0 : 1; L.placeMove(p.tx, p.ty); };
+L.rotatePlace = () => { const p = C.place; if (!p) return; p.r = ((p.r | 0) + 1) % 4; L.placeMove(p.tx, p.ty); };
 L.placeClick = () => {
   const p = C.place; if (!p) return;
   if (!p.ok) { UI.toast('Impossible de poser ici.', 'err'); U.sfx('err'); return; }
-  S.furn.push({ id: p.id, x: p.tx, y: p.ty, r: p.r ? 1 : 0 }); S.furnInv[p.id]--; U.sfx('buy');
+  S.furn.push({ id: p.id, x: p.tx, y: p.ty, r: (p.r | 0) % 4 }); S.furnInv[p.id]--; U.sfx('buy');
   const id = p.id; if (!(S.furnInv[id] > 0)) C.place = null;
   L.rebuild();
   if (C.place) L.placeMove(p.tx, p.ty); else L.build();
