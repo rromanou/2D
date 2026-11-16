@@ -353,6 +353,15 @@ Sp.building = (() => {
 /*  Accessoires / décors (dessinés dans le fond de la carte)           */
 /* ------------------------------------------------------------------ */
 const GOODS = ['#e4694f', '#f0d35a', '#6fbf5a', '#4b78c8', '#f2f2ee', '#d65fa3', '#e8a93b', '#8a63c9'];
+Sp.propRot = function (c, kind, tx, ty, w, h, o, r) {
+  r = r | 0; if (!r) return Sp.prop(c, kind, tx, ty, w, h, o);
+  const tmp = U.mk(w * 16, h * 16); Sp.prop(tmp.getContext('2d'), kind, 0, 0, w, h, o);
+  const sw = r % 2 ? h : w, sh = r % 2 ? w : h, out = U.mk(sw * 16, sh * 16), oc = out.getContext('2d'); oc.imageSmoothingEnabled = false;
+  if (r === 1) { oc.translate(sw * 16, 0); oc.rotate(Math.PI / 2); oc.drawImage(tmp, 0, 0); }
+  else if (r === 3) { oc.translate(0, sh * 16); oc.rotate(-Math.PI / 2); oc.drawImage(tmp, 0, 0); }
+  else { oc.translate(sw * 16, 0); oc.scale(-1, 1); oc.drawImage(tmp, 0, 0); oc.setTransform(1, 0, 0, 1, 0, 0); oc.globalCompositeOperation = 'source-atop'; oc.fillStyle = 'rgba(30,20,40,0.12)'; oc.fillRect(0, 0, sw * 16, sh * 16); }
+  c.drawImage(out, tx * 16, ty * 16);
+};
 Sp.prop = function (c, kind, tx, ty, w, h, o) {
   o = o || {};
   const x = tx * 16, y = ty * 16, W = w * 16, H = h * 16;
