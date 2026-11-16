@@ -210,7 +210,7 @@ function staticTalk(e) {
   UI.say(def.name, lines, ch);
 }
 function npcTalk(e) {
-  if (e.kid || e.mainChar) { Game.kidTalk(e); return; }
+  if (e.kid || e.mainChar || (e.role && S.role !== 'main')) { Game.kidTalk(e); return; }
   if (e.stun > 0) { e.stun = 0; UI.toast(e.name + ' se relève, groggy.'); return; }
   e.talk = 3.5; E.faceTo(e, P.x, P.y);
   const first = !e.talked;
