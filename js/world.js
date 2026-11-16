@@ -110,6 +110,15 @@ const INT = {
   bijou: { title: 'Bijouterie', w: 10, h: 8, floor: 'tile', wall: '#f0e4ec',
     props: [{ k: 'counter', x: 2, y: 3, w: 6, o: { top: '#f8f0f4', front: '#a8506a' } }, { k: 'plant', x: 8, y: 6 }, { k: 'rug', x: 3, y: 5, w: 4, h: 2, o: { col: '#8a2a5a' }, flat: 1 }],
     npcs: [{ id: 'bijoutier', x: 5, y: 2, dir: 'down' }], wander: 1 },
+  autoecole: { title: 'Auto-école', w: 12, h: 8, floor: 'wood', wall: '#f2ecd0',
+    props: [{ k: 'desk', x: 4, y: 3, w: 4 }, { k: 'board', x: 2, y: 0, w: 3 }, { k: 'chair', x: 5, y: 5 }, { k: 'chair', x: 7, y: 5 }, { k: 'plant', x: 10, y: 5 }, { k: 'poster', x: 9, y: 0, o: { col: '#d8a82a' } }],
+    npcs: [{ id: 'moniteur', x: 5, y: 2, dir: 'down' }], wander: 1 },
+  concession: { title: 'Concessionnaire', w: 16, h: 10, floor: 'tile', wall: '#dfe6f2',
+    props: [{ k: 'counter', x: 11, y: 3, w: 4, o: { top: '#e8f0ff', front: '#2f4a8c' } }, { k: 'rug', x: 2, y: 4, w: 7, h: 4, o: { col: '#2f4a8c' }, flat: 1 }, { k: 'plant', x: 14, y: 7 }, { k: 'plant', x: 1, y: 7 }, { k: 'poster', x: 4, y: 0, o: { col: '#4b78c8' } }, { k: 'poster', x: 8, y: 0, o: { col: '#c8503f' } }],
+    npcs: [{ id: 'vendeur', x: 12, y: 2, dir: 'down' }], wander: 2 },
+  garage: { title: 'Garage', w: 14, h: 9, floor: 'dark', wall: '#4a4a52',
+    props: [{ k: 'crate', x: 1, y: 2 }, { k: 'crate', x: 2, y: 2 }, { k: 'barrel', x: 12, y: 3 }, { k: 'barrel', x: 12, y: 4 }, { k: 'counter', x: 8, y: 3, w: 3, o: { top: '#6a6a72', front: '#3b3b44' } }, { k: 'poster', x: 5, y: 0, o: { col: '#e8a93b' } }],
+    npcs: [{ id: 'mecano', x: 9, y: 2, dir: 'down' }], wander: 1 },
   tribunal: { title: 'Tribunal des familles', w: 12, h: 9, floor: 'wood', wall: '#d8d0c0',
     props: [{ k: 'desk', x: 4, y: 3, w: 4 }, { k: 'bookshelf', x: 1, y: 2, w: 2 }, { k: 'bookshelf', x: 9, y: 2, w: 2 }, { k: 'chair', x: 5, y: 5 }, { k: 'chair', x: 7, y: 5 }, { k: 'plant', x: 10, y: 6 }],
     npcs: [{ id: 'juge', x: 5, y: 2, dir: 'down' }], wander: 2 },
@@ -237,6 +246,11 @@ const MAIN_B2 = [
   { id: 'tribunal', bx: 105, w: 8, o: { kind: 'shop', text: 'TRIBUNAL', signBg: '#4a4a52', extra: 'columns', awn: ['#6a6a72', '#d8d0c0'], wall: '#d8d0c0' } },
   { id: 'pizz', bx: 114, w: 7, o: { kind: 'shop', text: 'PIZZERIA', signBg: '#a8302a', awn: ['#4fb04f', '#fff7e6'], wall: '#f4d8c0' } }
 ];
+const MAIN_B3 = [
+  { id: 'autoecole', bx: 33, w: 8, o: { kind: 'shop', text: 'AUTO-ECOLE', signBg: '#d8a82a', signFg: '#2b1b14', awn: ['#e8e8e8', '#d8a82a'], wall: '#f2ecd0' } },
+  { id: 'concession', bx: 42, w: 9, o: { kind: 'shop', text: 'CONCESSIONNAIRE', signBg: '#1b2a52', signFg: '#e8f0ff', extra: 'lights', awn: ['#2f4a8c', '#e8f0ff'], wall: '#dfe6f2' } },
+  { id: 'garage', bx: 52, w: 8, o: { kind: 'shop', text: 'GARAGE', signBg: '#3b3b44', signFg: '#ffd54f', awn: ['#c8503f', '#2b2b33'], wall: '#9a9aa6' } }
+];
 const HWALLS = ['#f3e4c2', '#e8d8b8', '#dfe8d0', '#e6dcee', '#f0d8d0', '#d8e8f0'];
 const HROOFS = ['#c8503f', '#4b78c8', '#6a8f4f', '#8a63c9', '#b8803a', '#3fa9a0'];
 const HDOORS = ['#8b5a3c', '#4b78c8', '#6a8f4f', '#c8503f', '#6b4429'];
@@ -251,7 +265,7 @@ function buildOutdoor() {
   for (const ry of [22, 44, 66]) rectFill(m, 2, ry, 124, 2, PV);
   rectFill(m, 56, 40, 14, 14, PV);
   // routes
-  for (const ry of [24, 35, 46, 68]) rectFill(m, 2, ry, 124, 2, RD);
+  for (const ry of [24, 35, 46, 68, 81]) rectFill(m, 2, ry, 124, 2, RD);
   for (const rx of [30, 62, 94]) rectFill(m, rx, 2, 2, 92, RD);
   rectFill(m, 56, 40, 14, 14, PV);
   // 2. lac, sable, ponton
@@ -292,6 +306,15 @@ function buildOutdoor() {
     doors[b.id] = { x: dx, y: dy };
     m.doors.push({ x: dx, y: dy, to: b.id, id: b.id, label: INT[b.id].title });
     if (b.id === 'cine' || b.id === 'arcade') for (let k = 0; k < 3; k++) m.lights.push({ x: (b.bx + 1.5 + k * 2) * T, y: 33 * T, r: 36, c: k % 2 ? '#ff4fa0' : '#4fd8ff' });
+  }
+  for (const b of MAIN_B3) {
+    const by = 77, dx = b.bx + Math.floor(b.w / 2), dy = by + 2;
+    m.statics.push({ kind: 'bld', img: Sp.building(b.w, b.o), x: b.bx * T - 1, y: (by - 2) * T - 1, sortY: (by + 3) * T });
+    rectSolid(m, b.bx, by, b.w, 3, 1); m.solid[gi(m, dx, dy)] = 0;
+    placed.push({ x: b.bx - 1, y: by - 2, w: b.w + 2, h: 6 });
+    for (let x = b.bx; x < b.bx + b.w; x++) m.ground[gi(m, x, dy + 1)] = PV;
+    doors[b.id] = { x: dx, y: dy };
+    m.doors.push({ x: dx, y: dy, to: b.id, id: b.id, label: INT[b.id].title });
   }
   // entrepôt du marché noir
   { const bx = 10, by = 6, w = 6, dx = bx + 3, dy = by + 2;
