@@ -134,6 +134,7 @@ function hasTools() { return S.inv.pied > 0 || S.inv.crochets > 0; }
 function labelFor(c) {
   switch (c.t) {
     case 'ent': { const e = c.e;
+      if (e.kind === 'car') return e.owner ? 'Monter dans ta voiture' : 'Voiture';
       if (e.kind === 'static') return 'Parler à ' + e.name;
       if (e.kind === 'npc') return e.stun > 0 ? 'Aider ' + e.name : 'Parler à ' + e.name + (S.equip.weapon ? '  [F] Braquer' : '');
       if (e.kind === 'cop') return 'Parler à l\'agent';
@@ -168,7 +169,7 @@ Game.updateTarget = () => {
 Game.interact = () => {
   const c = C.target; if (!c) return;
   switch (c.t) {
-    case 'ent': { const e = c.e; if (e.kind === 'static') staticTalk(e); else if (e.kind === 'npc') npcTalk(e); else if (e.kind === 'cop') copTalk(e); else caress(e); break; }
+    case 'ent': { const e = c.e; if (e.kind === 'static') staticTalk(e); else if (e.kind === 'npc') npcTalk(e); else if (e.kind === 'cop') copTalk(e); else if (e.kind === 'car') { Game.carInteract && Game.carInteract(e); } else caress(e); break; }
     case 'pet': caress(c.e); break;
     case 'zone': zoneAction(c.z); break;
     case 'fish': startFishing(c); break;
@@ -195,6 +196,7 @@ function staticTalk(e) {
   for (const mn of (def.menu || [])) {
     if (mn.startsWith('shop:')) ch.push({ label: mn === 'shop:cafe' ? 'Commander' : mn === 'shop:pet' ? 'Voir les animaux' : mn === 'shop:black' ? 'Voir la marchandise' : mn === 'shop:studio' ? 'Voir les accessoires' : 'Acheter', fn: () => UI.shop(mn.slice(5)) });
     else if (mn === 'furn') ch.push({ label: 'Voir les meubles', fn: () => Game.furnShop() });
+    else if (Game.xMenus && Game.xMenus[mn]) ch.push({ label: Game.xMenus[mn].label, fn: () => Game.xMenus[mn].fn(e) });
     else if (mn === 'divorce') ch.push({ label: 'Divorce / séparation', fn: () => Game.divorceMenu && Game.divorceMenu() });
     else if (mn === 'heal') ch.push({ label: 'Soins (30 $)', fn: () => Game.heal() });
     else if (mn === 'bank') ch.push({ label: 'Mon compte', fn: () => UI.bank() });
@@ -522,7 +524,7 @@ function arrest() {
   for (const id in S.inv) if (D.ITEMS[id].ill && S.inv[id] > 0) { seized.push(D.ITEMS[id].n); delete S.inv[id]; }
   S.equip.weapon = null; S.equip.mask = false; S.wanted = 0;
   if (S.parcel) { S.parcel = null; S.inv.colis = 0; }
-  const t = 10 + lv * 5;
+  const t = 10 + lv * 5 + (S.nolic ? 80 : 0); if (S.nolic) { UI.toast('Conduite sans permis : peine alourdie.', 'err'); S.nolic = 0; }
   S.jail = { t, bail: Math.max(60, Math.round(t * 12)), fine };
   U.sfx('alarm');
   UI.toast('Arrêté ! Amende : ' + money(fine) + (seized.length ? '. Confisqué : ' + seized.join(', ') : '') + '.', 'err');
@@ -556,5 +558,5 @@ Game.faint = () => {
   const w = W.get('world'), home = w.houses.find(h => h.home);
   Game.go('world', home.front.x, home.front.y, 'down');
 };
-Game.openMini = openMini; Game.payJob = payJob; Game.jobLevel = jobLevel; Game.crimeDone = crimeDone; Game.scare = scare; Game.witnesses = witnesses;
+Game.arrest = arrest; Game.openMini = openMini; Game.payJob = payJob; Game.jobLevel = jobLevel; Game.crimeDone = crimeDone; Game.scare = scare; Game.witnesses = witnesses;
 })();
