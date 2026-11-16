@@ -276,7 +276,7 @@ D.FURN = {
   shower:    { n: 'Douche',            p: 220,  w: 1, h: 1, k: 'shower', fn: 'shower', d: 'Hygiène rapide.' },
   bath:      { n: 'Baignoire',         p: 380,  w: 2, h: 1, k: 'bath', fn: 'bath', d: 'Bain relaxant : hygiène et détente.' },
   wallseg:   { n: 'Mur (cloison)',     p: 15,   w: 1, h: 1, k: 'wallseg', solid: 1, d: 'Pour créer des pièces.' },
-  doorseg:   { n: 'Porte intérieure',  p: 35,   w: 1, h: 1, k: 'doorseg', flat: 1, d: 'Passage dans une cloison.' },
+  doorseg:   { n: 'Porte intérieure',  p: 35,   w: 1, h: 1, k: 'doorseg', flat: 1, fn: 'door', d: 'Passage dans une cloison.' },
   sofa3:     { n: 'Canapé d\'angle',   p: 260,  w: 3, h: 1, k: 'sofa', o: { col: '#d8708a' }, fn: 'sofa', d: 'Trois places roses.' },
   tvbig:     { n: 'Télé géante',       p: 650,  w: 2, h: 1, k: 'tvset', fn: 'tv', d: 'Cinéma maison.' },
   rug3:      { n: 'Tapis vert',        p: 40,   w: 3, h: 2, k: 'rug', o: { col: '#4f9a5a' }, flat: 1, d: 'Au sol.' }
