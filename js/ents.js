@@ -192,6 +192,7 @@ E.update = (m, dt, P) => {
     switch (e.kind) {
       case 'static': if (e.talk > 0) e.talk -= dt; break;
       case 'npc': {
+        if (e.goto && E.stepGoto) { E.stepGoto(e, m, dt); break; }
         if (e.wait) { e.anim = 0; if (e.talk > 0) { e.talk -= dt; E.faceTo(e, P.x, P.y); } break; }
         if (e.talk > 0) { e.talk -= dt; E.faceTo(e, P.x, P.y); break; }
         const d = Math.hypot(P.x - e.x, P.y - e.y);
