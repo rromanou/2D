@@ -120,6 +120,8 @@ addEventListener('keydown', e => {
     case 'KeyI': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'inv') UI.closeModal(); } else if (!UI.dialogOpen()) UI.inventory(); break;
     case 'KeyJ': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'quests') UI.closeModal(); } else if (!UI.dialogOpen()) UI.quests(); break;
     case 'KeyR': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'rel') UI.closeModal(); } else if (!UI.dialogOpen()) RG.Life.friends(); break;
+    case 'KeyH': if (P.car) RG.Cars.toggle('haz'); break;
+    case 'KeyL': if (P.car) RG.Cars.toggle('lights'); break;
     case 'KeyT': if (C.place) RG.Life.rotatePlace(); break;
     case 'KeyB': if (C.cur && C.cur.name === 'home' && !UI.isModal() && !UI.dialogOpen() && !C.place) RG.Life.build(); break;
     case 'KeyM': document.getElementById('mini').classList.toggle('big'); break;
@@ -190,6 +192,7 @@ function updateNeeds(dt, running) {
   if (S.hp <= 0) Game.faint();
 }
 function movePlayer(dt) {
+  if (P.car && RG.Cars) { RG.Cars.drive(dt, keys); return; }
   let ax = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ay = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
   let run = keys.run;
   if (!ax && !ay && ptr.on && !C.place) {
@@ -334,6 +337,7 @@ function drawAnimal(e) {
 }
 function entDraw(e) {
   if (e.hidden) return;
+  if (e.kind === 'car') { RG.Cars.drawCar(ctx, e, camX, camY); return; }
   if (e.kind === 'animal' || e.kind === 'pet') drawAnimal(e);
   else {
     if (e.kind === 'deco' && e.folded) { /* se couche : même rendu */ }
@@ -379,7 +383,7 @@ function render() {
   }
   for (const e of m.ents) { if (e.x < camX - 40 || e.x > camX + VW + 40 || e.y < camY - 20 || e.y > camY + VH + 60) continue; list.push({ y: e.y, d: () => entDraw(e), e }); }
   for (const p of C.pets) list.push({ y: p.y, d: () => drawAnimal(p), e: p });
-  list.push({ y: P.y, d: () => drawPerson(P, true) });
+  list.push({ y: P.y, d: () => { if (P.car && RG.Cars) RG.Cars.drawPlayer(ctx, camX, camY); else drawPerson(P, true); } });
   list.sort((a, b) => a.y - b.y);
   for (const it of list) it.d();
 
@@ -420,7 +424,7 @@ function render() {
   }
   // étiquettes
   for (const it of list) {
-    const e = it.e; if (!e || e.hidden || e.kind === 'animal' || e.kind === 'deco' && false) continue;
+    const e = it.e; if (!e || e.hidden || e.kind === 'animal' || e.kind === 'car' || e.kind === 'deco' && false) continue;
     const d = Math.hypot(P.x - e.x, P.y - e.y);
     if (e.kind === 'pet') { if (d < 40) nameTag(e.name, e.x - camX, e.y - 18 - camY, '#ffd0e0'); continue; }
     if (d < 52 || (e.kind === 'static' && Game.questMark && Game.questMark(e))) {
