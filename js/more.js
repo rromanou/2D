@@ -163,6 +163,7 @@ L.furnAction = (fn, idx) => {
         UI.hotbarDirty && UI.hotbarDirty();
         if (ok >= tot - 1) { S.inv.platmaison = (S.inv.platmaison || 0) + 1; L.pass(25, { fun: 4 }, 'Plat maison réussi ! Il est dans ton sac.'); } else L.pass(25, { fun: 0 }, 'Le plat est raté... les ingrédients sont perdus.'); } });
     })();
+    case 'door': return L.doorConfig(idx);
     case 'wc': if ((S.bladder == null ? 100 : S.bladder) > 85) { UI.toast('Tu n\'en as pas vraiment besoin.'); return; } S.bladder = 100; U.sfx('click'); return L.pass(5, {}, 'Ahh, ça soulage.');
     case 'shower': if (S.hyg > 90) { UI.toast('Tu es déjà propre.'); return; } S.hyg = 100; return L.pass(12, { fun: 3 }, 'Douche chaude : tu es tout propre.');
     case 'bath': S.hyg = 100; return L.pass(35, { fun: 20, stamina: 10 }, 'Bain relaxant : propre et détendu.');
@@ -193,49 +194,76 @@ const famRoles = () => { const r = ['main']; if (S.partner) r.push('partner'); S
 const roleName = r => r === 'main' ? (S.main ? S.main.name : S.name) : r === 'partner' ? S.partner.name : (kidByRole(r) || {}).name;
 const roleStage = r => r.startsWith('kid:') ? X.kidStage(kidByRole(r)) : 3;
 const roleAp = r => r === 'main' ? (S.main ? S.main.ap : S.ap) : r === 'partner' ? S.partner.ap : X.kidAp(kidByRole(r), roleStage(r));
-const fresh = () => { const o = {}; NEEDS.forEach(k => { o[k] = 75; }); return o; };
-const needsOf = r => r === S.role ? S : (S.fam[r] || (S.fam[r] = fresh()));
+/* ---- profils par personnage : besoins, muscles, inventaire, emploi, animaux, argent ---- */
+const PKEYS = ['muscle', 'fit', 'know', 'inv', 'equip', 'job', 'jobxp', 'pets', 'followers'];
+const isHouseRole = r => r === 'main' || r === 'partner';
+const married = () => !!(S.partner && S.rel[S.partner.key] && S.rel[S.partner.key].married);
+const shares = r => married() && isHouseRole(r);
+const fresh = r => {
+  const o = {}; NEEDS.forEach(k => { o[k] = 75; });
+  Object.assign(o, { muscle: 0, fit: 0, know: 0, inv: r === 'partner' ? { pomme: 1 } : {}, equip: { weapon: null, mask: false, hand: null }, job: null, jobxp: {}, pets: [], followers: [], money: r === 'partner' ? 150 : 0 });
+  return o;
+};
+const needsOf = r => r === S.role ? S : (S.fam[r] || (S.fam[r] = fresh(r)));
 G.needsOf = needsOf;
+// portefeuille d'un rôle inactif (le foyer = argent du personnage principal, partagé si marié)
+const walletOwner = r => shares(r) ? (S.role === 'main' || (S.role === 'partner' && married()) ? S : needsOf('main')) : needsOf(r);
+const spend = (r, a) => { const w = walletOwner(r); if (w.money >= a) { w.money -= a; return true; } return false; };
+const earn = (r, a) => { walletOwner(r).money += a; };
+G.walletOf = r => walletOwner(r);
 function famTick(dt) {
   if (!S.fam) return;
   for (const r of famRoles()) {
     if (r === S.role) continue;
-    const n = needsOf(r), st = roleStage(r), name = roleName(r);
+    const n = needsOf(r), st = roleStage(r), name = roleName(r), w = walletOwner(r);
     n.hunger = Math.max(0, n.hunger - 0.055 * dt); n.thirst = Math.max(0, n.thirst - 0.08 * dt); n.sleep = Math.max(0, n.sleep - 0.1 * dt);
     n.fun = Math.max(0, n.fun - 0.07 * dt); n.bladder = Math.max(0, n.bladder - 0.1 * dt); n.hyg = Math.max(0, n.hyg - 0.035 * dt);
     const auto = st >= 3 ? 'all' : st === 2 ? 'most' : 'none';
-    if (auto !== 'none') {
-      if (n.sleep < 22) n.sleep = 90; if (n.bladder < 22) n.bladder = 100; if (n.hyg < 22) n.hyg = 100; if (n.fun < 22) n.fun += 35;
-    }
-    if (auto === 'all') {
-      if (n.hunger < 30 && S.money >= 6) { S.money -= 6; n.hunger = Math.min(100, n.hunger + 45); }
-      if (n.thirst < 30 && S.money >= 2) { S.money -= 2; n.thirst = Math.min(100, n.thirst + 50); }
-    }
+    if (r === 'main') { /* le principal en attente est autonome lui aussi */ }
+    const sleepingNow = S.time / 60 >= 22 || S.time / 60 < 6.5;
+    if (auto !== 'none' || r === 'main') {
+      if (n.sleep < 22 && sleepingNow) n.sleep = 90; if (n.sleep > 0 && n.sleep < 90 && sleepingNow) n.sleep = Math.min(100, n.sleep + 0.5 * dt);
+      if (n.bladder < 22) n.bladder = 100; if (n.hyg < 22) n.hyg = 100; if (n.fun < 22) n.fun += 35;
+      if (n.hunger < 30 && spend(r, 6)) n.hunger = Math.min(100, n.hunger + 45);
+      if (n.thirst < 30 && spend(r, 2)) n.thirst = Math.min(100, n.thirst + 50);
+    } else if (auto === 'none' || auto === 'most') { /* géré par le joueur */ }
+    if (st >= 2 && r.startsWith('kid:') && n.payDay !== S.day) { n.payDay = S.day; n.money = (n.money || 0) + (st === 3 ? 40 : 8); }
+    if (st >= 2 && r.startsWith('kid:') && st === 2) { /* l'ado se nourrit seul s'il a de l'argent de poche */ }
     if (n.bladder <= 0) { n.bladder = 55; n.hyg = Math.max(0, n.hyg - 30); }
     if (n.hunger <= 0 || n.thirst <= 0) n.hp = Math.max(0, n.hp - 0.5 * dt); else if (n.hp < 100) n.hp = Math.min(100, n.hp + 0.05 * dt);
     if (n.hp <= 0) {
-      if (r === 'partner' && st >= 3 && S.money < 6) { UI.banner(name + ' est décédé(e)', 'Faute de moyens pour se nourrir'); S.partner = null; delete S.fam.partner; const hm = W.get('home'); if (hm) hm.ents = hm.ents.filter(e => e.role !== 'partner'); }
-      else { const fee = Math.min(S.money, 150); S.money -= fee; Object.assign(n, fresh()); n.hp = 60; UI.toast(name + ' a été hospitalisé(e) (' + money(fee) + ').', 'err'); }
+      if (r === 'partner' && st >= 3 && w.money < 6) { UI.banner(name + ' est décédé(e)', 'Faute de moyens pour se nourrir'); S.partner = null; delete S.fam.partner; const hm = W.get('home'); if (hm) hm.ents = hm.ents.filter(e => e.role !== 'partner'); }
+      else { const fee = Math.min(w.money, 150); w.money -= fee; const keep = {}; PKEYS.concat(['money']).forEach(k => { keep[k] = n[k]; }); Object.assign(n, fresh(r), keep); n.hp = 60; UI.toast(name + ' a été hospitalisé(e) (' + money(fee) + ').', 'err'); }
     }
     if (!n.warned || S.abs - n.warned > 120) { if (st <= 2 && (n.hunger < 18 || n.thirst < 18)) { n.warned = S.abs; UI.toast(name + ' a besoin qu\'on s\'occupe de ' + (n.hunger < 18 ? 'son repas' : 'sa soif') + '.', 'err'); } }
   }
 }
 const spotIn = (m, rnd) => { rnd = rnd || Math.random; for (let k = 0; k < 80; k++) { const tx = 2 + Math.floor(rnd() * (m.w - 4)), ty = 3 + Math.floor(rnd() * (m.h - 5)); if (!m.solid[ty * m.w + tx]) return { x: tx, y: ty }; } return { x: 4, y: 4 }; };
+const homeFront = () => { const w = W.get('world'), h = w && w.houses.find(x => x.home); return h ? { x: h.front.x, y: h.front.y } : { x: 62 * T, y: 52 * T }; };
+const mkRoleEnt = (m, role, nm, ap, female, extra, at) => {
+  const e = E.spawnWander(m, 0, 0, 3, Math.random);
+  const s = at || (() => { const t = spotIn(m); return { x: t.x * T + 8, y: t.y * T + 12 }; })();
+  e.x = s.x; e.y = s.y; e.home = { x: e.x, y: e.y, r: 3 * T }; e.name = nm; e.ap = ap; e.female = female; e.role = role; e.indoor = true; e.spd = 10; Object.assign(e, extra); return e;
+};
+const apMus = (ap, role) => { const mu = (needsOf(role).muscle || 0); const t = mu >= 60 ? 2 : mu >= 25 ? 1 : 0; return t ? Object.assign({}, ap, { mus: t }) : ap; };
+const findRoleEnt = role => { for (const n of Object.keys(W.maps)) { const e = (W.maps[n].ents || []).find(x => x.role === role); if (e) return { e, m: W.maps[n] }; } return null; };
 L.enter = (name) => {
   if (name !== 'home') { if (S.guest) L.removeGuest(); L.purgePartner(); return; }
   const m = W.get('home'); if (!m) return;
   const prev = {}; m.ents.forEach(e => { if (e.role) prev[e.role] = { x: e.x, y: e.y }; });
   if (L.posOv) { Object.assign(prev, L.posOv); L.posOv = null; }
-  m.ents = m.ents.filter(x => !x.role && !x.kid && !x.guest && !x.partner && !x.mainChar);
-  const mk = (role, nm, ap, female, extra) => {
-    const s = prev[role] ? { x: (prev[role].x - 8) / T, y: (prev[role].y - 12) / T } : spotIn(m), e = E.spawnWander(m, 0, 0, 3, Math.random);
-    e.x = prev[role] ? prev[role].x : s.x * T + 8; e.y = prev[role] ? prev[role].y : s.y * T + 12; e.home = { x: e.x, y: e.y, r: 3 * T };
-    e.name = nm; e.ap = ap; e.female = female; e.role = role; e.indoor = true; e.spd = 10; Object.assign(e, extra); return e;
-  };
-  S.kids.forEach(k => { if (roleKid(k) === S.role) return; const st = X.kidStage(k); mk(roleKid(k), k.name, X.kidAp(k, st), !k.boy, { kid: true, stage: st, kscale: X.KSCALE[st], baby: st === 0, kidRef: k, spd: st === 0 ? 0 : 14 }); });
-  if (S.partner && S.role !== 'partner') mk('partner', S.partner.name, S.partner.ap, S.partner.female, { partner: true });
-  if (S.role !== 'main' && S.main) mk('main', S.main.name, S.main.ap, !!S.main.female, { mainChar: true, wait: true, spd: 0 });
+  const away = {}; // personnages qui sont dehors en journée : on ne les reconstruit pas ici
+  const outW = W.get('world'); if (outW) outW.ents.forEach(e => { if (e.role) away[e.role] = 1; });
+  m.ents = m.ents.filter(x => !x.role && !x.kid && !x.guest && !x.partner && !x.mainChar && x.kind !== 'pet');
+  const at = r => prev[r] ? { x: prev[r].x, y: prev[r].y } : null;
+  S.kids.forEach(k => { const r = roleKid(k); if (r === S.role || away[r]) return; const st = X.kidStage(k); mkRoleEnt(m, r, k.name, apMus(X.kidAp(k, st), r), !k.boy, { kid: true, stage: st, kscale: X.KSCALE[st], baby: st === 0, kidRef: k, spd: st === 0 ? 0 : 14 }, at(r)); });
+  if (S.partner && S.role !== 'partner' && !away.partner) mkRoleEnt(m, 'partner', S.partner.name, apMus(S.partner.ap, 'partner'), S.partner.female, { partner: true }, at('partner'));
+  if (S.role !== 'main' && S.main) {
+    const me = mkRoleEnt(m, 'main', S.main.name, apMus(S.main.ap, 'main'), !!S.main.female, { mainChar: true, wait: true, spd: 0 }, at('main') || S.mainAt);
+    (needsOf('main').pets || []).forEach((rec, i) => { const p = E.makePet(rec, me.x - 12 - i * 9, me.y + 3); p.static = true; m.ents.push(p); });
+  }
   if (S.guest) { const s = spotIn(m), e = E.spawnWander(m, s.x, s.y, 3, Math.random); e.name = S.guest.name; e.ap = S.guest.ap; e.female = S.guest.female; e.guest = true; e.indoor = true; e.spd = 10; }
+  applyDoors(); routine(true);
 };
 G.lifeEnter = L.enter;
 L.switchTo = role => {
@@ -243,17 +271,26 @@ L.switchTo = role => {
   if (role === S.role) return;
   if (S.wanted > 0) { UI.toast('Impossible de changer de personnage quand on est recherché.', 'err'); return; }
   if (S.jail || C.fade.dir !== 0 || C.place) return;
-  const m = W.get('home'), t = m.ents.find(e => e.role === role); if (!t) { UI.toast('Cette personne n\'est pas là.', 'err'); return; }
-  const old = S.role, ox = P.x, oy = P.y;
-  S.fam = S.fam || {}; S.fam[old] = {}; NEEDS.forEach(k => { S.fam[old][k] = S[k]; });
-  if (old === 'main') S.main = { name: S.name, ap: S.ap, female: !!S.female };
-  const nn = needsOf(role); NEEDS.forEach(k => { S[k] = nn[k]; });
+  const m = W.get('home'), f = findRoleEnt(role); if (!f) { UI.toast('Cette personne n\'est pas à la maison.', 'err'); return; }
+  const t = f.e, old = S.role, ox = P.x, oy = P.y;
+  // 1. sauvegarde du personnage actuel
+  const snap = {}; NEEDS.concat(PKEYS).forEach(k => { snap[k] = S[k]; }); snap.money = S.money; snap.payDay = (S.fam[old] || {}).payDay;
+  if (old === 'main') { S.main = { name: S.name, ap: S.ap, female: !!S.female }; S.mainAt = { x: ox, y: oy }; }
+  S.fam[old] = snap;
+  const isH = r => r === 'main' || (r === 'partner' && married());
+  const nn = Object.assign(fresh(role), S.fam[role] || {});
+  NEEDS.concat(PKEYS).forEach(k => { S[k] = nn[k]; });
+  if (isH(old) && isH(role)) { /* argent du foyer partagé : inchangé */ }
+  else if (isH(old)) { S.fam.main = S.fam.main || fresh('main'); S.fam.main.money = S.money; S.money = nn.money || 0; }
+  else if (isH(role)) { S.money = (S.fam.main || fresh('main')).money; }
+  else S.money = nn.money || 0;
   delete S.fam[role];
   const posOv = {}; m.ents.forEach(e => { if (e.role) posOv[e.role] = { x: e.x, y: e.y }; });
   posOv[old] = { x: ox, y: oy }; delete posOv[role];
   S.role = role; S.name = roleName(role); S.ap = roleAp(role); S.pscale = role.startsWith('kid:') ? X.KSCALE[roleStage(role)] : 1;
   P.x = t.x; P.y = t.y;
   L.posOv = posOv; L.enter('home');
+  if (G.syncPets) { G.syncPets(); G.placePets && G.placePets(); }
   U.sfx('win'); UI.toast('Tu contrôles maintenant ' + S.name + '.', 'ok'); famDirty = true; UI.hotbarDirty && UI.hotbarDirty();
 };
 let famDirty = true, famSig = '';
@@ -276,7 +313,7 @@ const barsHtml = (n, keys) => '<div class="kbars">' + keys.map(([k, lab]) => '<d
 const takeItem = kind => { const ids = Object.keys(S.inv).filter(i => S.inv[i] > 0 && D.ITEMS[i] && D.ITEMS[i].k === kind); ids.sort((a, b) => (D.ITEMS[b].h || D.ITEMS[b].t || 0) - (D.ITEMS[a].h || D.ITEMS[a].t || 0)); const id = ids[0]; if (!id) return null; S.inv[id]--; UI.hotbarDirty && UI.hotbarDirty(); return D.ITEMS[id]; };
 G.kidTalk = e => {
   e.talk = 6;
-  if (e.mainChar) { UI.say(e.name, [pick(['Je t\'attends ici.', 'Je ne bouge pas, vas-y.', 'Prends ton temps.'])], [{ label: 'Reprendre le contrôle', fn: () => L.switchTo('main') }, { label: 'Au revoir' }]); return; }
+  if (e.mainChar || !(e.kid && (S.role === 'main' || S.role === 'partner'))) { famTalk(e); return; }
   const k = e.kidRef, role = roleKid(k);
   UI.modal({ title: k.name + ' (' + X.STAGES[X.kidStage(k)] + ')', cls: 'rel',
     render: () => {
@@ -303,8 +340,8 @@ G.kidTalk = e => {
       else if (a === 'hug') { n.fun = Math.min(100, n.fun + 8); S.fun = Math.min(100, S.fun + 5); G.floater(e.x, e.y - 28, '<3', '#ff6aa0'); U.sfx('win'); }
       else if (a === 'hw') { UI.closeModal(); L.pass(45, { fun: 4, know: 3 }, 'Devoirs terminés avec ' + k.name + '.'); return; }
       else if (a === 'chat') { UI.closeModal(); L.pass(30, { fun: 12 }, 'Belle discussion avec ' + k.name + '.'); return; }
-      else if (a === 'pocket') { if (S.money < 10) say('Pas assez d\'argent.'); else { S.money -= 10; say(k.name + ' te remercie.'); } }
-      else if (a === 'help') { if (k.help === S.day) say(k.name + ' t\'a déjà aidé aujourd\'hui.'); else { k.help = S.day; S.money += 50; U.sfx('coin'); say(k.name + ' te donne 50 $.'); } }
+      else if (a === 'pocket') { if (S.money < 10) say('Pas assez d\'argent.'); else { S.money -= 10; n.money = (n.money || 0) + 10; say(k.name + ' te remercie (argent de poche).'); } }
+      else if (a === 'help') { if (k.help === S.day) say(k.name + ' t\'a déjà aidé aujourd\'hui.'); else { const give = Math.min(50, n.money || 0); if (give <= 0) say(k.name + ' n\'a pas d\'argent de côté.'); else { k.help = S.day; n.money -= give; S.money += give; U.sfx('coin'); say(k.name + ' te donne ' + give + ' $.'); } } }
       m.refresh();
     } });
 };
@@ -399,10 +436,107 @@ function followers() {
 }
 
 /* ================================================================== */
+/*  Portes à accès restreint, lits, routine de la famille              */
+/* ================================================================== */
+const allowed = (f, role) => !f || !f.allow || f.allow.includes(role);
+function applyDoors() {
+  const m = W.get('home'); if (!m || !m.def || !m.def.doors) return;
+  for (const d of m.def.doors) { const f = S.furn[d.idx]; m.solid[d.y * m.w + d.x] = (f && !allowed(f, S.role)) ? 1 : 0; }
+}
+function guardDoors() {
+  const m = W.get('home'); if (!m || C.cur !== m || !m.def || !m.def.doors || !m.def.doors.length) return;
+  for (const e of m.ents) if (e.role) {
+    let bad = false;
+    for (const d of m.def.doors) { const f = S.furn[d.idx]; if (f && !allowed(f, e.role) && Math.floor(e.x / T) === d.x && Math.floor((e.y - 1) / T) === d.y) bad = true; }
+    if (bad && e._lx != null) { e.x = e._lx; e.y = e._ly; e.state = 'idle'; e.t = 1; } else { e._lx = e.x; e._ly = e.y; }
+  }
+}
+L.doorConfig = idx => {
+  const f = S.furn[idx]; if (!f) return;
+  UI.modal({ title: 'Accès de la porte', cls: 'rel',
+    render: () => '<p class="muted">Choisis qui peut franchir cette porte (les autres seront bloqués).</p><div class="brow">' + famRoles().map(r => { const on = allowed(f, r); return '<button data-a="t" data-r="' + esc(r) + '"' + (on ? ' class="go"' : '') + '>' + esc(roleName(r)) + (on ? ' : oui' : ' : non') + '</button>'; }).join('') + '</div>',
+    onAction: (a, b, m) => { if (a === 't') { const r = b.dataset.r, all = famRoles(); let al = f.allow ? f.allow.slice() : all.slice(); al = al.includes(r) ? al.filter(x => x !== r) : al.concat(r); f.allow = al.length >= all.length ? undefined : al; applyDoors(); m.refresh(); } } });
+};
+function bedSlots() {
+  const out = [];
+  S.furn.forEach((f, i) => {
+    const F = D.FURN[f.id]; if (!F) return;
+    if (F.fn === 'sleep') { const d = (f.r | 0) & 1 ? { w: F.h, h: F.w } : { w: F.w, h: F.h }, n = f.id === 'bedlux' ? 2 : 1; for (let k = 0; k < n; k++) out.push({ bed: i, x: (f.x + d.w / 2) * T, y: (f.y + (n === 2 ? k + 0.5 : d.h / 2)) * T + 6 }); }
+    else if (F.k === 'crib') out.push({ bed: i, crib: true, x: (f.x + 0.5) * T, y: (f.y + 0.5) * T + 6 });
+  });
+  return out;
+}
+function sleepPos() {
+  const slots = bedSlots(), used = new Set(), res = {};
+  const take = (r, pred) => { const i = slots.findIndex((s, j) => !used.has(j) && pred(s)); if (i < 0) return false; used.add(i); res[r] = slots[i]; return true; };
+  famRoles().forEach(r => { const pref = S.beds && S.beds[r]; if (pref != null && take(r, s => s.bed === pref)) return; if (roleStage(r) === 0 && take(r, s => s.crib)) return; take(r, s => !s.crib) || take(r, s => true); });
+  return res;
+}
+L.bedAssign = () => {
+  UI.modal({ title: 'Qui dort où ?', cls: 'rel',
+    render: () => { const beds = S.furn.map((f, i) => [f, i]).filter(x => D.FURN[x[0].id] && (D.FURN[x[0].id].fn === 'sleep' || D.FURN[x[0].id].k === 'crib')); if (!beds.length) return '<p class="muted">Aucun lit installé.</p>';
+      return '<div class="list">' + famRoles().map(r => { const bi = S.beds[r]; const lab = bi != null && S.furn[bi] ? D.FURN[S.furn[bi].id].n + ' n°' + (beds.findIndex(x => x[1] === bi) + 1) : 'Automatique'; return '<div class="row"><div class="rn"><b>' + esc(roleName(r)) + '</b></div><button data-a="c" data-r="' + esc(r) + '">' + esc(lab) + '</button></div>'; }).join('') + '</div><p class="muted">Un lit simple accueille 1 personne, un lit double 2.</p>'; },
+    onAction: (a, b, m) => { if (a === 'c') { const r = b.dataset.r, beds = S.furn.map((f, i) => i).filter(i => D.FURN[S.furn[i].id] && (D.FURN[S.furn[i].id].fn === 'sleep' || D.FURN[S.furn[i].id].k === 'crib')); const cur = S.beds[r], k = beds.indexOf(cur); const nx = k + 1 >= beds.length ? null : beds[k + 1]; if (nx == null) delete S.beds[r]; else S.beds[r] = nx; routine(true); m.refresh(); } } });
+};
+const oldSD = L.sleepDialog;
+L.sleepDialog = () => {
+  if (!(S.partner || S.kids.length)) return oldSD();
+  UI.say('Lit', ['Dormir jusqu\'au matin ?'], [{ label: 'Dormir', fn: () => L.sleep() }, { label: 'Assigner les lits', fn: () => L.bedAssign() }, { label: 'Pas maintenant' }]);
+};
+E.stepGoto = (e, m, dt) => {
+  const g = e.goto; g.t -= dt; const dx = g.x - e.x, dy = g.y - e.y, d = Math.hypot(dx, dy);
+  if (d < 6 || g.t <= 0) { e.goto = null; if (g.cb) g.cb(e); return; }
+  const sp = 46 * dt; if (!E.move(e, m, dx / d * sp, dy / d * sp)) { if (!E.move(e, m, dx / d * sp, 0)) E.move(e, m, 0, dy / d * sp); }
+  e.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down'); e.anim += dt * 8;
+};
+const relocate = (e, from, to, pos) => {
+  from.ents = from.ents.filter(x => x !== e); to.ents.push(e); e.x = pos.x; e.y = pos.y; e.goto = null; e.state = 'idle'; e.t = 1;
+  const out = W.get('world'); e.indoor = to !== out; e.home = { x: e.x, y: e.y, r: (to === out ? 12 : 3) * T };
+  if (!e.mainChar) { e.wait = false; } e.sleeping = false;
+};
+function routine(force) {
+  if (C.mode !== 'play' || !S.fam) return;
+  const hm = W.get('home'), out = W.get('world'); if (!hm || !out) return;
+  const h = (S.time / 60) % 24, away = h >= 7.5 && h < 20.5, night = h >= 22 || h < 6.5;
+  const pos = sleepPos(), dx = Math.floor(hm.w / 2), hdoor = { x: dx * T + 8, y: (hm.h - 1) * T + 8 };
+  for (const r of famRoles()) {
+    if (r === S.role) continue;
+    const f = findRoleEnt(r); if (!f) continue;
+    const e = f.e, inHome = f.m === hm, canGo = r !== 'main' && roleStage(r) >= 2;
+    if (canGo && away && inHome && !e.goto) {
+      const go = () => relocate(e, hm, out, homeFront());
+      if (!force && C.cur === hm) e.goto = { x: hdoor.x, y: hdoor.y, t: 8, cb: go }; else go();
+      continue;
+    }
+    if (canGo && !away && !inHome && !e.goto) {
+      const fr = homeFront(), go = () => relocate(e, out, hm, { x: hm.spawn.x, y: hm.spawn.y });
+      if (!force && C.cur === out && Math.abs(e.x - P.x) < 220 && Math.abs(e.y - P.y) < 140) e.goto = { x: fr.x, y: fr.y, t: 14, cb: go }; else go();
+      continue;
+    }
+    if (inHome && !e.goto) {
+      if (night) { const s = pos[r]; if (!e.sleeping || force) { if (s) { e.x = s.x; e.y = s.y; } else { const t = spotIn(hm); e.x = t.x * T + 8; e.y = t.y * T + 12; } e.sleeping = true; e.wait = true; e.anim = 0; } }
+      else if (e.sleeping) { e.sleeping = false; if (!e.mainChar) e.wait = false; const t = spotIn(hm); e.x = t.x * T + 8; e.y = t.y * T + 12; }
+    }
+  }
+}
+function famTalk(e) {
+  const ar = S.role, tr = e.role;
+  let word = 'Proche';
+  if (ar.startsWith('kid:')) word = tr === 'partner' ? (S.partner.female ? 'Maman' : 'Papa') : tr === 'main' ? 'Parent' : (e.female ? 'Soeur' : 'Frère');
+  else if (ar === 'partner') word = tr === 'main' ? 'Conjoint(e)' : 'Enfant';
+  const parent = tr === 'partner' || tr === 'main';
+  const lines = { Maman: ['Bonjour mon chéri.', 'Tu as bien mangé ?'], Papa: ['Salut mon grand.', 'Tout va bien à l\'école ?'], Parent: ['Bonjour toi !', 'Tu as faim ?'], 'Conjoint(e)': ['Ma journée était bien. Et la tienne ?', 'Je suis heureux(se) avec toi.'], Enfant: ['Maman, Papa... on joue ?', 'J\'ai un dessin à te montrer !'] }[word] || ['Salut !', 'Ça va ?'];
+  const ch = [{ label: 'Discuter (20 min)', fn: () => L.pass(20, { fun: 8 }, 'Belle discussion avec ' + e.name + '.') }, { label: 'Câliner', fn: () => { S.fun = Math.min(100, S.fun + 4); G.floater(e.x, e.y - 28, '<3', '#ff6aa0'); U.sfx('win'); } }];
+  if (ar.startsWith('kid:') && parent) ch.push({ label: 'Argent de poche (10 $)', fn: () => { const me = needsOf(ar); if (me.pocketDay === S.day) { UI.toast('Tu as déjà reçu ton argent de poche aujourd\'hui.', 'err'); return; } const w = walletOwner(tr); if (w.money < 10) { UI.toast(e.name + ' n\'a pas assez d\'argent.', 'err'); return; } w.money -= 10; S.money += 10; me.pocketDay = S.day; U.sfx('coin'); UI.toast('+10 $ d\'argent de poche.', 'ok'); } });
+  ch.push({ label: 'Contrôler ' + e.name, fn: () => L.switchTo(tr) }, { label: 'Au revoir' });
+  UI.say(e.name + ' (' + word + ')', [pick(lines)], ch);
+}
+
+/* ================================================================== */
 /*  Bots : entrées/sorties de bâtiments et vie nocturne                */
 /* ================================================================== */
 L.pool = L.pool || [];
-const isWand = e => e.kind === 'npc' && !e.follow && !e.wait && !e.kid && !e.partner && !e.mainChar && !e.guest && !e.fight && e.dying == null && !(e.talk > 0) && !e.stun;
+const isWand = e => e.kind === 'npc' && !e.role && !e.goto && !e.follow && !e.wait && !e.kid && !e.partner && !e.mainChar && !e.guest && !e.fight && e.dying == null && !(e.talk > 0) && !e.stun;
 const farFromP = e => Math.abs(e.x - P.x) > 200 || Math.abs(e.y - P.y) > 130;
 function doorPos(name) { const o = W.get('world'), d = o.doorsById && o.doorsById[name]; return d ? { x: d.x * T + 8, y: (d.y + 1) * T + 12 } : null; }
 function botFlow() {
@@ -413,22 +547,27 @@ function botFlow() {
   const inMaps = Object.keys(W.maps).filter(n => n !== 'world' && n !== 'home' && n !== 'casino');
   const indW = []; inMaps.forEach(n => W.maps[n].ents.forEach(e => { if (isWand(e)) indW.push({ e, n }); }));
   const total = outW.length + indW.length + L.pool.length, want = Math.round(f * total);
-  const sendIn = (e) => { // dehors -> bâtiment (hors champ de vision)
-    if (!farFromP(e) && C.cur === out) return false;
+  const visible = e => C.cur === out && !farFromP(e);
+  const intoBuilding = (e, n) => { out.ents = out.ents.filter(x => x !== e); const m = W.get(n); e.x = m.spawn.x; e.y = m.spawn.y; e.home = { x: e.x, y: e.y, r: 3 * T }; e.indoor = true; e.state = 'idle'; e.t = 1; e.goto = null; m.ents.push(e); };
+  const sendIn = e => {
+    if (visible(e)) { // il marche jusqu'à la porte la plus proche, puis entre
+      let best = null; for (const n of inMaps) { const dp = doorPos(n); if (!dp) continue; const d = Math.hypot(dp.x - e.x, dp.y - e.y); if (!best || d < best.d) best = { n, dp, d }; }
+      if (best && best.d < 360) { e.goto = { x: best.dp.x, y: best.dp.y - 4, t: 20, cb: () => intoBuilding(e, best.n) }; return true; }
+      return false;
+    }
     out.ents = out.ents.filter(x => x !== e);
-    if (S.time / 60 >= 21 || S.time / 60 < 6 ? Math.random() < 0.8 : false) { L.pool.push(e); return true; }
-    const n = pick(inMaps), m = W.get(n), s = spotIn(m); e.x = s.x * T + 8; e.y = s.y * T + 12; e.home = { x: e.x, y: e.y, r: 3 * T }; e.indoor = true; e.state = 'idle'; m.ents.push(e); return true;
+    if (h >= 21 || h < 6 ? Math.random() < 0.8 : false) { L.pool.push(e); return true; }
+    const n = pick(inMaps); intoBuilding(e, n); return true;
   };
-  const sendOut = (e, n) => { // bâtiment ou domicile -> dehors, par la porte
-    const dp = n ? doorPos(n) : null, base = dp || (() => { const d = pick(out.doors || [{ x: 62, y: 50 }]); return { x: d.x * T + 8, y: (d.y + 1) * T + 12 }; })();
-    if (n) W.maps[n].ents = W.maps[n].ents.filter(x => x !== e); else L.pool = L.pool.filter(x => x !== e);
-    e.x = base.x; e.y = base.y; e.home = { x: base.x, y: base.y, r: 10 * T }; e.indoor = false; e.state = 'idle'; e.t = 0.5; out.ents.push(e);
+  const fromBuilding = (e, n) => { W.maps[n].ents = W.maps[n].ents.filter(x => x !== e); const dp = doorPos(n) || { x: 62 * T, y: 50 * T }; e.x = dp.x; e.y = dp.y; e.home = { x: e.x, y: e.y, r: 10 * T }; e.indoor = false; e.state = 'idle'; e.t = 0.5; e.goto = null; out.ents.push(e); };
+  const sendOut = (e, n) => {
+    if (!n) { L.pool = L.pool.filter(x => x !== e); const d = pick(out.doors || [{ x: 62, y: 50 }]); e.x = d.x * T + 8; e.y = (d.y + 1) * T + 12; e.home = { x: e.x, y: e.y, r: 10 * T }; e.indoor = false; e.state = 'idle'; e.t = 0.5; out.ents.push(e); return; }
+    const m = W.maps[n], dx = Math.floor(m.w / 2);
+    if (C.cur === m) e.goto = { x: dx * T + 8, y: (m.h - 1) * T + 6, t: 15, cb: () => fromBuilding(e, n) }; else fromBuilding(e, n);
   };
-  if (outW.length > want) { const c = shuffle(outW).find(e => farFromP(e) || C.cur !== out); if (c) sendIn(c); }
+  if (outW.length > want) { const c = shuffle(outW).sort((a, b) => (visible(b) ? 1 : 0) - (visible(a) ? 1 : 0))[0]; if (c) sendIn(c); }
   else if (outW.length < want) { if (L.pool.length) sendOut(pick(L.pool), null); else if (indW.length) { const c = pick(indW); sendOut(c.e, c.n); } }
-  else if (Math.random() < 0.35 && indW.length) { // roulement en journée
-    const c = pick(indW); sendOut(c.e, c.n); const o = shuffle(outW).find(e => farFromP(e)); if (o) sendIn(o);
-  }
+  else if (Math.random() < 0.45 && indW.length) { const c = pick(indW); sendOut(c.e, c.n); const o = shuffle(outW)[0]; if (o) sendIn(o); }
 }
 
 /* ================================================================== */
@@ -452,7 +591,7 @@ G.onShotHit = e => {
   oldHit(e); if (Math.random() < 0.35) { e.fight = true; e.stun = 0; e.armed = Math.random() < 0.25; }
 };
 G.npcAttack = e => {
-  const dmg = e.armed ? 11 : 5; S.hp = Math.max(0, S.hp - dmg); U.sfx('err'); G.floater(P.x, P.y - 24, '-' + dmg, '#ff7a7a');
+  e.atkT = 0.28; const dmg = e.armed ? 11 : 5; S.hp = Math.max(0, S.hp - dmg); U.sfx('err'); G.floater(P.x, P.y - 24, '-' + dmg, '#ff7a7a');
   if (S.hp <= 0 && G.faint) { e.fight = false; G.faint(); }
 };
 G.npcResist = v => {
@@ -464,7 +603,7 @@ G.npcResist = v => {
 };
 let punchCd = 0;
 G.punch = () => {
-  if (punchCd > 0) return; punchCd = 0.45;
+  if (punchCd > 0) return; punchCd = 0.45; P.punchT = 0.28;
   let best = null, bd = 26; for (const e of C.cur.ents) { if (e.kind !== 'npc' || e.dying != null || e.partner || e.kid || e.mainChar) continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < bd) { bd = d; best = e; } }
   U.sfx('shot'); if (!best) { UI.toast('Poing dans le vide.'); return; }
   const dmg = 7 + (S.muscle || 0) * 0.25 + ri(0, 3); best.hp = hpOf(best) - dmg; S.stamina = Math.max(0, S.stamina - 3);
@@ -551,21 +690,24 @@ D.QUESTS.push(
 /* ================================================================== */
 /*  Mise à jour                                                        */
 /* ================================================================== */
-const oldUpd = L.update; let botT = 0, tgtT = 0;
+const oldUpd = L.update; let botT = 0, tgtT = 0, rtT = 0;
 L.update = dt => {
   oldUpd(dt);
   if (punchCd > 0) punchCd -= dt;
   if (S.role == null) S.role = 'main'; if (!S.fam) S.fam = {};
   if (S.equip.hand && !(S.inv[S.equip.hand] > 0)) S.equip.hand = null;
+  if (P.punchT > 0) P.punchT -= dt; if (C.cur) for (const e of C.cur.ents) if (e.atkT > 0) e.atkT -= dt;
   if (C.mode !== 'play') return;
+  Object.keys(W.maps).forEach(n => { const m = W.maps[n]; if (m === C.cur || !m.ents) return; for (const e of m.ents) if (e.goto) { e.goto.t -= dt; if (e.goto.t <= 0) { const g = e.goto; e.goto = null; if (g.cb) g.cb(e); } } });
+  guardDoors(); if ((rtT += dt) > 2) { rtT = 0; routine(false); }
   famBar(); followers();
   dying(dt);
-  if ((botT += dt) > 3) { botT = 0; botFlow(); }
+  if ((botT += dt) > 2.5) { botT = 0; botFlow(); }
   if ((tgtT += dt) > 2) { tgtT = 0; ensureTargets(); }
 };
 const oldInit = L.init;
 L.init = () => {
-  oldInit(); S.role = S.role || 'main'; S.fam = S.fam || {}; S.followers = S.followers || []; S.muscle = S.muscle || 0;
+  oldInit(); S.fam = S.fam || {}; Object.keys(S.fam).forEach(r => { S.fam[r] = Object.assign(fresh(r), S.fam[r]); }); S.beds = S.beds || {}; S.role = S.role || 'main'; S.fam = S.fam || {}; S.followers = S.followers || []; S.muscle = S.muscle || 0;
   if (S.bladder == null) S.bladder = 90; if (S.hyg == null) S.hyg = 90;
   if (!S.gaveWC) { S.gaveWC = 1; S.furnInv.toilet = (S.furnInv.toilet || 0) + 1; S.furnInv.shower = (S.furnInv.shower || 0) + 1; }
   if (S.role !== 'main' && !S.main) S.role = 'main';
