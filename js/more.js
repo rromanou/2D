@@ -21,7 +21,7 @@ const QUIZ = [
 ];
 const ANA = ['MAISON', 'FROMAGE', 'JARDIN', 'CHATEAU', 'BATEAU', 'MONTAGNE', 'POISSON', 'LUMIERE', 'FENETRE', 'VILLAGE', 'SOLEIL', 'RIVIERE'];
 function gameQuiz(o) {
-  const qs = shuffle(QUIZ).slice(0, o.n || 3); let i = 0, ok = 0, note = '';
+  const qs = shuffle(o.qs || QUIZ).slice(0, o.n || 3); let i = 0, ok = 0, note = '';
   UI.modal({ title: o.title, cls: 'mini', locked: true, kind: 'mg',
     render: () => {
       if (i >= qs.length) return '<p>' + ok + ' bonne(s) réponse(s) sur ' + qs.length + '.</p><div class="brow"><button class="go" data-a="end">Terminer</button></div>';
