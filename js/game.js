@@ -292,15 +292,25 @@ function drawPerson(e, isPlayer) {
   const pk = isPlayer && S.pscale && S.pscale < 1 ? S.pscale : 0;
   if (e.kid || pk) { const k = pk || e.kscale || (e.baby ? 0.5 : 0.7); ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
   ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 2 - camY, 8, 1); ctx.fillRect(x - 6 - camX, y - 1 - camY, 12, 2); ctx.fillRect(x - 4 - camX, y + 1 - camY, 8, 1);
-  if (e.stun > 0) {
+  if (e.stun > 0 || e.sleeping) {
     ctx.save(); ctx.translate(x - camX, y - camY - 2); ctx.rotate(Math.PI / 2); ctx.drawImage(spr, -16, -9); ctx.restore();
-    U.drawText(ctx, 'ZZZ', x - 5 - camX, y - 14 - camY, '#cfeefa', '#000');
+    U.drawText(ctx, e.sleeping ? 'Zz' : 'ZZZ', x - 5 - camX, y - 14 - camY - (e.sleeping ? Math.round(Math.sin(C.now * 3) * 2) : 0), '#cfeefa', '#000');
   } else {
     const held = isPlayer ? (S.equip.weapon || S.equip.hand) : null;
     if (held && dir === 'up') drawHeld(held, x - camX, y - camY, dir);
     ctx.drawImage(spr, x - 9 - camX, y - 31 - camY);
     if (held && dir !== 'up') drawHeld(held, x - camX, y - camY, dir);
+    const pt = isPlayer ? P.punchT : e.atkT; if (pt > 0) drawPunch(x - camX, y - camY, dir, 1 - pt / 0.28, ap.skin);
   }
+}
+function drawPunch(x, y, dir, k, skin) {
+  const dv = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] }[dir] || [0, 1], ext = Math.sin(Math.min(1, k) * Math.PI);
+  const sx = x + (dir === 'left' ? -6 : dir === 'right' ? 6 : dir === 'up' ? -4 : 4), sy = y - 14;
+  const hx = Math.round(sx + dv[0] * (3 + 9 * ext)), hy = Math.round(sy + dv[1] * (2 + 8 * ext));
+  ctx.fillStyle = skin;
+  for (let i = 1; i <= 3; i++) ctx.fillRect(Math.round(sx + (hx - sx) * i / 4) - 1, Math.round(sy + (hy - sy) * i / 4) - 1, 3, 3);
+  ctx.fillRect(hx - 2, hy - 2, 5, 5); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(hx - 2, hy + 2, 5, 1);
+  if (k > 0.35 && k < 0.75) { const ix = hx + dv[0] * 5, iy = hy + dv[1] * 4; ctx.fillStyle = '#ffe36a'; ctx.fillRect(ix - 1, iy - 4, 2, 8); ctx.fillRect(ix - 4, iy - 1, 8, 2); ctx.fillStyle = '#fff'; ctx.fillRect(ix - 1, iy - 1, 2, 2); }
 }
 function drawHeld(id, x, y, dir) {
   const it = D.ITEMS[id]; if (!it) return;
@@ -330,6 +340,7 @@ function entDraw(e) {
     drawPerson(e, false);
   }
 }
+Game.syncPets = syncPets; Game.placePets = placePets;
 Game.questMark = null;
 function render() {
   const m = C.cur; if (!m) return;
