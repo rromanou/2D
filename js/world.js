@@ -289,7 +289,7 @@ function buildOutdoor() {
   for (let y = HWY0; y < HWY0 + 10; y++) for (let x = 2; x < MW - 2; x++) {
     m.ground[gi(m, x, y)] = RD; m.solid[gi(m, x, y)] = 1;
   }
-  for (const gx of HWGATES) for (let k = 0; k < 2; k++) { m.solid[gi(m, gx + k, HWY0)] = 0; }
+  for (let x = 2; x < MW - 2; x++) m.solid[gi(m, x, HWY0)] = 0; // bretelle d'accès sur toute la longueur
   // 3. parc
   rectFill(m, 33, 58, 28, 2, PV); rectFill(m, 46, 50, 2, 17, PV);
   // 4. sentiers
@@ -512,8 +512,8 @@ function buildOutdoor() {
     if (r === 2 || r === 7) R(c, px, py + (r === 2 ? 15 : 0), T, 1, '#e8e8e8');
     if ((r === 3 || r === 6) && x % 2 === 0) R(c, px + 2, py + 15, 10, 1, '#e8e8e8');
   }
-  for (const gx of HWGATES) { // bretelles d'accès
-    for (let k = 0; k < 2; k++) { R(c, (gx + k) * T, HWY0 * T, T, T, '#6b6f78'); R(c, (gx + k) * T, HWY0 * T, T, 2, '#e8d77a'); }
+  for (let x = 2; x < MW - 2; x++) { R(c, x * T, HWY0 * T, T, T, '#6b6f78'); R(c, x * T, HWY0 * T, T, 2, '#e8d77a'); }
+  for (const gx of HWGATES) { // panneaux d'accès
     R(c, (gx + 2) * T, (HWY0 - 3) * T + 4, T * 4, 10, '#1b5a8a'); U.drawText(c, 'AUTOROUTE', (gx + 2) * T + 4, (HWY0 - 3) * T + 6, '#fff', null);
   }
   // ombres des bâtiments
