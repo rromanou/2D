@@ -44,8 +44,8 @@ button, input { font-family: inherit; font-size: inherit; line-height: inherit; 
 @keyframes starb { 50% { background: #ff5a4a; } }
 #h-equip { margin-top: 4px; font-size: 10px; color: var(--accent2); display: none; }
 #topbtns { position: absolute; right: 14px; top: 14px; display: flex; gap: 10px; pointer-events: auto; }
-#mini { position: absolute; right: 14px; bottom: 14px; width: 256px; height: 192px; image-rendering: pixelated; box-shadow: 0 0 0 4px var(--edge), 0 0 0 8px var(--paper); background: #000; transition: width .15s steps(3), height .15s steps(3); display: none; }
-#mini.big { width: 640px; height: 480px; max-width: 70vw; max-height: 70vh; }
+#mini { position: absolute; right: 14px; bottom: 14px; width: 256px; height: auto; image-rendering: pixelated; box-shadow: 0 0 0 4px var(--edge), 0 0 0 8px var(--paper); background: #000; transition: width .15s steps(3), height .15s steps(3); display: none; }
+#mini.big { width: 640px; height: auto; max-width: 70vw; max-height: 70vh; object-fit: contain; }
 
 /* ============ Boutons ============ */
 .btn, .panel button, #dialog button, #title button, .toast button {
@@ -154,7 +154,7 @@ input:focus { outline: none; background: #fff; }
   #hud { min-width: 180px; padding: 6px 8px; } .bar label { width: 44px; }
   .bag { flex-direction: column; } .bag .grid { grid-template-columns: repeat(4, 64px); }
   .av { flex-direction: column; align-items: center; }
-  #mini { width: 160px; height: 120px; }
+  #mini { width: 160px; height: auto; }
   #topbtns .btn { padding: 2px 8px; }
 }
 
