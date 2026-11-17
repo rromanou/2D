@@ -74,7 +74,8 @@ let radio = null;
 function hideRadio() { if (radio) radio.style.display = 'none'; }
 function mkRadio() {
   radio = document.createElement('div'); radio.id = 'radio';
-  radio.style.cssText = 'position:absolute;left:50%;bottom:92px;transform:translateX(-50%);min-width:340px;max-width:92vw;background:#15151c;color:#dfe8ff;border:3px solid #2f4a8c;box-shadow:0 0 0 2px #0d1530;padding:7px 10px;font-family:Pixel,monospace;font-size:13px;z-index:7;display:none;text-align:center;line-height:1.35;pointer-events:auto';
+  radio.style.cssText = 'position:absolute;left:8px;bottom:8px;width:176px;max-height:22px;overflow:hidden;background:#15151c;color:#dfe8ff;border:3px solid #2f4a8c;box-shadow:0 0 0 2px #0d1530;padding:3px 8px;font-family:Pixel,monospace;font-size:13px;z-index:7;display:none;text-align:left;line-height:1.35;pointer-events:auto;transition:width .12s,max-height .12s';
+  if (!document.getElementById('radioCss')) { const st2 = document.createElement('style'); st2.id = 'radioCss'; st2.textContent = '#radio:hover{width:350px!important;max-height:420px!important;overflow:visible!important;padding:7px 10px!important;text-align:center!important}#radio .rfull{display:none}#radio:hover .rfull{display:block}#radio:hover .rmin{display:none}#radio.alert{border-color:#ffd84a}'; document.head.appendChild(st2); }
   document.getElementById('ui').appendChild(radio);
   radio.addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; const a = b.dataset.r; if (a === 'ok') Pol.accept(); else if (a === 'no') { st.pending = null; st.nextCall = 20; } else if (a === 'bk') Pol.backup(); else if (a === 'cancel') Pol.cancelCall(); else if (a === 'sir') Cars.toggle('siren'); else if (a === 'pull') Pol.orderPull(); ev.stopPropagation(); });
 }
@@ -93,6 +94,7 @@ function drawRadio() {
   if (!radio) mkRadio();
   if (!S.duty || C.mode !== 'play' || UI.isModal() || UI.dialogOpen()) { radio.style.display = 'none'; return; }
   let h = '<div style="color:#8fb0ff">RADIO - EN SERVICE - 120 $/min - gagné ' + money(st.earned) + '</div>';
+  const mini = st.pending ? 'RADIO : APPEL !' : st.call ? 'RADIO : mission' : 'RADIO : en service';
   if (st.still > 35) h += '<div style="color:#ff8a4a">Bouge ! Fin de service dans ' + Math.max(0, Math.ceil(60 - st.still)) + ' s</div>';
   if (st.pending) h += '<div style="color:#ffe08a;margin-top:3px">APPEL : ' + esc(st.pending.text) + ' (' + distTxt(st.pending.x, st.pending.y) + ')</div>' + btn('ok', 'Accepter', '#9fe8a0') + btn('no', 'Refuser', '#f0a0a0');
   else if (st.call) h += '<div style="color:#ffe08a;margin-top:3px">MISSION : ' + esc(st.call.text) + (st.call.x != null && C.cur.name === 'world' ? ' - zone jaune à ' + distTxt(st.call.x, st.call.y) : '') + (st.call.left != null ? ' - restant : ' + st.call.left : '') + '</div>' + btn('bk', 'Renforts', '#cfd8ee') + btn('cancel', 'Abandonner', '#f0a0a0');
@@ -101,6 +103,8 @@ function drawRadio() {
   h += radarLine();
   h += '<div style="opacity:.7;font-size:11px">Criminalité : ' + Math.round((S.crimeF || 1) * 100) + ' %</div>';
   h += '<div style="opacity:.6;font-size:11px;margin-top:2px">C menotter - E contrôler - K sirène (en voiture) - F arme</div>';
+  radio.classList.toggle('alert', !!st.pending);
+  h = '<div class="rmin" style="color:' + (st.pending ? '#ffe08a' : '#8fb0ff') + '">' + mini + '</div><div class="rfull">' + h + '</div>';
   if (h !== st.sig) { st.sig = h; radio.innerHTML = h; }
   radio.style.display = 'block';
 }
