@@ -133,6 +133,13 @@ E.populate = m => {
       if (!m.solid[ty * m.w + tx] && (g === 0 || g === 4 || g === 3)) { E.spawnWander(m, tx, ty, 5 + Math.floor(rnd() * 6), rnd); break; }
     }
   }
+  for (let i = 0; i < 22; i++) { // quartiers sud et est
+    for (let k = 0; k < 40; k++) {
+      const south = rnd() < 0.6, tx = south ? 4 + Math.floor(rnd() * 180) : 130 + Math.floor(rnd() * 56), ty = south ? 96 + Math.floor(rnd() * 56) : 6 + Math.floor(rnd() * 80);
+      const g = m.ground[ty * m.w + tx];
+      if (!m.solid[ty * m.w + tx] && (g === 0 || g === 4 || g === 3)) { E.spawnWander(m, tx, ty, 6 + Math.floor(rnd() * 8), rnd); break; }
+    }
+  }
   // place publique : foule
   for (let i = 0; i < 14; i++) {
     for (let k = 0; k < 40; k++) {
