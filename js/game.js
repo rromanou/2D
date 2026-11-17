@@ -293,10 +293,16 @@ function drawPerson(e, isPlayer) {
   const spr = Sp.char(ap, dir, fr, isPlayer ? S.equip.mask : false);
   const x = Math.round(e.x), y = Math.round(e.y);
   const pk = isPlayer && S.pscale && S.pscale < 1 ? S.pscale : 0;
+  if ((e.kid || pk) && (e.sleeping || e.stun > 0)) {
+    const k = pk || e.kscale || (e.baby ? 0.5 : 0.7);
+    drawLying(ctx, spr, x, y, e, k, camX, camY);
+    if (e.sleeping) U.drawText(ctx, 'Zz', x - 5 - camX, y - 16 - camY - Math.round(Math.sin(C.now * 3) * 2), '#cfeefa', '#000');
+    return;
+  }
   if (e.kid || pk) { const k = pk || e.kscale || (e.baby ? 0.5 : 0.7); ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 1 - camY, 8, 2); ctx.drawImage(spr, Math.round(x - 9 * k - camX), Math.round(y - 31 * k - camY), Math.round(18 * k), Math.round(32 * k)); return; }
   ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x - 4 - camX, y - 2 - camY, 8, 1); ctx.fillRect(x - 6 - camX, y - 1 - camY, 12, 2); ctx.fillRect(x - 4 - camX, y + 1 - camY, 8, 1);
   if (e.stun > 0 || e.sleeping) {
-    ctx.save(); ctx.translate(x - camX, y - camY - 2); ctx.rotate(Math.PI / 2); ctx.drawImage(spr, -16, -9); ctx.restore();
+    drawLying(ctx, spr, x, y, e, 1, camX, camY);
     U.drawText(ctx, e.sleeping ? 'Zz' : 'ZZZ', x - 5 - camX, y - 14 - camY - (e.sleeping ? Math.round(Math.sin(C.now * 3) * 2) : 0), '#cfeefa', '#000');
   } else {
     const held = isPlayer ? (S.equip.weapon || S.equip.hand) : null;
@@ -305,6 +311,16 @@ function drawPerson(e, isPlayer) {
     if (held && dir !== 'up') drawHeld(held, x - camX, y - camY, dir);
     const pt = isPlayer ? P.punchT : e.atkT; if (pt > 0) drawPunch(x - camX, y - camY, dir, 1 - pt / 0.28, ap.skin);
   }
+}
+function drawLying(ctx, spr, x, y, e, k, camX, camY) {
+  const ang = e.sleeping && e.sleepAng != null ? e.sleepAng : Math.PI / 2;
+  if (e.sleeping && Math.abs(ang) < 0.01) { // tête sur l'oreiller, couvert jusqu'aux épaules
+    const w = Math.round(18 * k), hh = Math.round(32 * k), top = Math.round(y - 20 * k);
+    ctx.drawImage(spr, 0, 0, 18, 15, Math.round(x - w / 2 - camX), top - camY, w, Math.round(15 * k));
+    ctx.fillStyle = e.blanket || '#cfe0f5'; ctx.fillRect(Math.round(x - 8 - camX), top + Math.round(13 * k) - camY, 16, 9); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(Math.round(x - 8 - camX), top + Math.round(13 * k) - camY, 16, 2);
+    return;
+  }
+  ctx.save(); ctx.translate(x - camX, y - camY - 6 * k); ctx.rotate(ang); ctx.drawImage(spr, Math.round(-9 * k), Math.round(-16 * k), Math.round(18 * k), Math.round(32 * k)); ctx.restore();
 }
 function drawPunch(x, y, dir, k, skin) {
   const dv = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] }[dir] || [0, 1], ext = Math.sin(Math.min(1, k) * Math.PI);
@@ -448,6 +464,7 @@ function drawMini() {
   const m = C.cur; if (!m) return;
   if (!m.outdoor) { mini.style.display = 'none'; return; }
   mini.style.display = 'block';
+  if (mini.width !== m.mini.width || mini.height !== m.mini.height) { mini.width = m.mini.width; mini.height = m.mini.height; }
   mctx.imageSmoothingEnabled = false;
   mctx.drawImage(m.mini, 0, 0);
   if (S.parcel) { const h = m.houses[S.parcel.hid]; if (h) { mctx.fillStyle = '#ffd54f'; mctx.fillRect(h.doorX - 1, h.doorY - 1, 3, 3); } }
