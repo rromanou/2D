@@ -23,7 +23,7 @@ const spec = c => {
 /* ================================================================== */
 /*  Carte de l'autoroute                                               */
 /* ================================================================== */
-const HW = 260, HH = 18;
+const HW = 260, HH = 18, HAX = [50, 130, 210];
 function buildHighway() {
   if (W.maps.autoroute) return;
   const m = { name: 'autoroute', w: HW, h: HH, outdoor: true, ground: new Uint8Array(HW * HH), solid: new Uint8Array(HW * HH), statics: [], doors: [], zones: [], npcs: [], animals: [], lights: [], houses: [], trees: [], bg: null, title: 'Autoroute', ret: null, ents: [], hw: true };
@@ -45,6 +45,8 @@ function buildHighway() {
     U.drawText(c, '110', k * T + 3, 1 * T + 4, '#111', null);
   }
   c.fillStyle = 'rgba(0,0,0,0.12)'; for (let x = 0; x < HW; x += 3) c.fillRect(x * T, 11 * T + 14, T * 2, 2);
+  for (const ax of HAX) for (let k = 0; k < 2; k++) { m.solid[11 * HW + ax + k] = 0; R(c, (ax + k) * T, 11 * T, T, T, '#6b6f78'); R(c, (ax + k) * T, 11 * T, T, 2, '#e8d77a'); }
+  for (const ax of HAX) { R(c, (ax - 1) * T, 12 * T + 2, T * 4, 10, '#1b5a8a'); U.drawText(c, 'VILLAGE', (ax - 1) * T + 6, 12 * T + 4, '#fff', null); }
   m.bg = bg; m.doorsById = {}; m.farm = null; m.lake = null;
   m.mini = W.makeMini(m); W.maps.autoroute = m;
 }
@@ -176,7 +178,7 @@ function highwayLinks(c) {
     if (P.x > (m.w - 3) * T && (ty === 46 || ty === 47)) { c.ang = 0; c.vx = Math.abs(c.vx) + 20; c.vy = 0; G.go('autoroute', 4 * T, 8.5 * T + 6, 'right'); }
     else if (P.x < 3 * T && (ty === 46 || ty === 47)) { c.ang = Math.PI; c.vx = -Math.abs(c.vx) - 20; c.vy = 0; G.go('autoroute', (HW - 5) * T, 5.5 * T + 6, 'left'); }
   } else if (m.hw) {
-    if (P.x < 2 * T) { c.ang = Math.PI; c.vx = -Math.abs(c.vx); c.vy = 0; G.go('world', 124 * T, 46 * T + 8, 'left'); }
+    if (P.x < 2 * T) { c.ang = Math.PI; c.vx = -Math.abs(c.vx); c.vy = 0; G.go('world', (W.get('world').w - 4) * T, 46 * T + 8, 'left'); }
     else if (P.x > (HW - 2) * T) { c.ang = 0; c.vx = Math.abs(c.vx); c.vy = 0; G.go('world', 4 * T, 47 * T + 8, 'right'); }
   }
 }
@@ -197,9 +199,9 @@ function spawnTraffic(m) {
       m.ents.push(mkTraffic(ri(5, HW - 5) * T, row * T + 12, east ? 1 : -1, v, row));
     }
   } else if (m.name === 'world') {
-    for (let i = 0; i < 10; i++) {
-      const ry = pick([24, 35, 46, 68, 81]), east = Math.random() < 0.5, row = ry + (east ? 1 : 0);
-      m.ents.push(mkTraffic(ri(6, 120) * T, row * T + 12, east ? 1 : -1, pick([30, 38, 45]), row));
+    for (let i = 0; i < 18; i++) {
+      const ry = pick([24, 35, 46, 68, 100, 112, 124, 136, 148]), east = Math.random() < 0.5, row = ry + (east ? 1 : 0);
+      m.ents.push(mkTraffic(ri(6, m.w - 8) * T, row * T + 12, east ? 1 : -1, pick([30, 38, 45]), row));
     }
   }
 }
@@ -226,8 +228,8 @@ function trafficStep(m, dt) {
     e.ang = Math.atan2((ty - e.y) * 0.4, e.dir * 20) + (e.dir < 0 ? Math.PI : 0);
   }
   m.ents = m.ents.filter(e => !e.remove);
-  const n = m.ents.filter(e => e.kind === 'car' && e.ai && !e.cop).length, want = m.hw ? 34 : 10;
-  if (n < want && (m.respawn || 0) > 0) { m.respawn--; const east = Math.random() < 0.5, row = m.hw ? (east ? 8 : 5) + ri(0, 1) : pick([25, 36, 47, 69, 82]); const x = east ? 4 * T : (m.w - 5) * T; m.ents.push(mkTraffic(x, row * T + 12, east ? 1 : -1, m.hw ? pick([90, 105, 115]) : 40, row)); }
+  const n = m.ents.filter(e => e.kind === 'car' && e.ai && !e.cop).length, want = m.hw ? 34 : 18;
+  if (n < want && (m.respawn || 0) > 0) { m.respawn--; const east = Math.random() < 0.5, row = m.hw ? (east ? 8 : 5) + ri(0, 1) : pick([25, 36, 47, 69, 101, 113, 125, 137, 149]); const x = east ? 4 * T : (m.w - 5) * T; m.ents.push(mkTraffic(x, row * T + 12, east ? 1 : -1, m.hw ? pick([90, 105, 115]) : 40, row)); }
 }
 // excès de vitesse -> poursuite
 function violations(dt) {
@@ -284,6 +286,10 @@ L.update = dt => {
   if (C.mode !== 'play') return;
   hud();
   const m = C.cur; if (!m || !m.outdoor || UI.isModal()) return;
+  if (!P.car && C.fade.dir === 0) { // accès à pied à l'autoroute
+    if (m.name === 'world' && m.hwy) { const ty = Math.floor(P.y / T), tx = Math.floor(P.x / T); const gi = m.hwy.gates.indexOf(m.hwy.gates.find(g => tx >= g && tx <= g + 1)); if (ty >= m.hwy.y0 && gi >= 0) { G.go('autoroute', HAX[gi] * T + 8, 10 * T + 2, 'up'); UI.toast('Autoroute : attention aux voitures !', 'err'); } }
+    else if (m.hw) { const ty = Math.floor(P.y / T), tx = Math.floor(P.x / T); const gi = HAX.findIndex(g => tx >= g && tx <= g + 1); if (ty >= 11 && gi >= 0) { const w = W.get('world'); G.go('world', (w.hwy.gates[gi] + 1) * T, (w.hwy.y0 - 2) * T, 'up'); } }
+  }
   if (m.traffic) trafficStep(m, dt);
   if (P.car) { violations(dt); copCars(dt); if (P.car && P.car.hp <= 0 && Math.hypot(P.car.vx, P.car.vy) < 8) UI.toast('Ta voiture est en panne : fais-la réparer au garage.', 'err'); }
   else if (m.ents.some(e => e.cop)) copCars(dt);
