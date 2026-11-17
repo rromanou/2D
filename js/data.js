@@ -20,6 +20,7 @@ D.ITEMS = {
   soda:     { n: 'Soda',             k: 'drink',  p: 3,   h: 2,  t: 26, d: 'Pétillant.' },
   lait:     { n: 'Lait',             k: 'drink',  p: 3,   h: 6,  t: 26, d: 'Bien froid.' },
   cafe:     { n: 'Café',             k: 'drink',  p: 3,   h: 0,  t: 14, st: 40, d: 'Redonne de l\'énergie.' },
+  telephone:{ n: 'Téléphone', k: 'tool', p: 120, d: 'Permet d\'appeler ta voiture sur la route la plus proche.' },
   canne:    { n: 'Canne à pêche',    k: 'tool',   p: 45,  d: 'Pour pêcher au bord de l\'eau.' },
   hache:    { n: 'Hache',            k: 'tool',   p: 60,  d: 'Pour couper du bois en forêt.' },
   lettre:   { n: 'Lettre',           k: 'misc',   p: 0,   d: 'Une lettre cachetée.' },
@@ -58,7 +59,7 @@ D.WEAPON_LV = { knife: 1, gun: 2, shotgun: 3 };
 /*  Boutiques                                                          */
 /* ------------------------------------------------------------------ */
 D.SHOPS = {
-  super:    { title: 'Supermarché',        items: ['pomme', 'pain', 'sandwich', 'pizza', 'salade', 'poulet', 'eau', 'jus', 'soda', 'lait', 'cafe'] },
+  super:    { title: 'Supermarché',        items: ['telephone', 'pomme', 'pain', 'sandwich', 'pizza', 'salade', 'poulet', 'eau', 'jus', 'soda', 'lait', 'cafe'] },
   cafe:     { title: 'Café Chez Mimi',     items: ['cafe', 'croissant', 'sandwich', 'pizza', 'jus', 'lait'] },
   hardware: { title: 'Quincaillerie',      items: ['canne', 'hache'] },
   black:    { title: 'Marché noir',        items: ['couteau', 'pistolet', 'fusil', 'balles', 'cagoule', 'pied', 'crochets'] },
