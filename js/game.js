@@ -99,6 +99,10 @@ function typing(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t
 addEventListener('keydown', e => {
   if (typing(e)) return;
   if (C.mode !== 'play') return;
+  if (P.car && !UI.isModal() && !UI.dialogOpen() && RG.Cars.shift) {
+    if ((e.key || '').toLowerCase() === 'q') { e.preventDefault(); if (!e.repeat) RG.Cars.shift(-1); return; }
+    if (e.code === 'KeyE') { e.preventDefault(); if (!e.repeat) RG.Cars.shift(1); return; }
+  }
   const k = KEYMAP[e.code];
   if (k) { keys[k] = true; e.preventDefault(); return; }
   if (e.repeat && e.code !== 'KeyE') return;
@@ -442,6 +446,7 @@ function render() {
     }
   }
   if (RG.Police && RG.Police.drawWorld) RG.Police.drawWorld(ctx, camX, camY);
+  if (RG.Cars && RG.Cars.drawWorld) RG.Cars.drawWorld(ctx, camX, camY);
   // étiquettes
   for (const it of list) {
     const e = it.e; if (!e || e.hidden || e.kind === 'animal' || e.kind === 'car' || e.kind === 'deco' && false) continue;
