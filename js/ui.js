@@ -161,12 +161,14 @@ UI.itemAction = id => {
   if (it.k === 'drink') return { a: 'use', l: 'Boire' };
   if (it.k === 'weapon') return { a: 'eq', l: S.equip.weapon === id ? 'Ranger' : 'Équiper' };
   if (it.k === 'mask') return { a: 'mask', l: S.equip.mask ? 'Retirer' : 'Mettre' };
+  if (id === 'telephone') return { a: 'phone', l: 'Utiliser' };
   return { a: 'hold', l: S.equip.hand === id ? 'Ranger' : 'Tenir en main' };
 };
 UI.useSlot = id => {
   const act = UI.itemAction(id); if (!act) { const it = D.ITEMS[id]; UI.toast(it.n + ' : rien à faire ici.'); return; }
   if (act.a === 'use') RG.Game.useItem(id);
   else if (act.a === 'eq') { RG.Game.equipWeapon(id); U.sfx('click'); }
+  else if (act.a === 'phone') { if (UI.isModal()) UI.closeModal(); RG.Cars.phone(); }
   else if (act.a === 'hold') { RG.Game.holdItem(id); U.sfx('click'); }
   else RG.Game.toggleMask();
   UI.hotbarDirty();
@@ -204,6 +206,7 @@ UI.inventory = () => {
       else if (a === 'eq') RG.Game.equipWeapon(b.dataset.i);
       else if (a === 'hold') RG.Game.holdItem(b.dataset.i);
       else if (a === 'mask') RG.Game.toggleMask();
+      else if (a === 'phone') { UI.closeModal(); RG.Cars.phone(); return; }
       UI.hotbarDirty(); m.refresh();
     }
   });
