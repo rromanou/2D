@@ -557,7 +557,7 @@ function famTalk(e) {
 /*  Bots : entrées/sorties de bâtiments et vie nocturne                */
 /* ================================================================== */
 L.pool = L.pool || [];
-const isWand = e => e.kind === 'npc' && !e.role && !e.goto && !e.follow && !e.wait && !e.kid && !e.partner && !e.mainChar && !e.guest && !e.fight && e.dying == null && !(e.talk > 0) && !e.stun;
+const isWand = e => e.kind === 'npc' && !e.role && !e.goto && !e.follow && !e.wait && !e.kid && !e.partner && !e.mainChar && !e.guest && !e.fight && !e.sus && e.dying == null && !(e.talk > 0) && !e.stun;
 const farFromP = e => Math.abs(e.x - P.x) > 200 || Math.abs(e.y - P.y) > 130;
 function doorPos(name) { const o = W.get('world'), d = o.doorsById && o.doorsById[name]; return d ? { x: d.x * T + 8, y: (d.y + 1) * T + 12 } : null; }
 function botFlow() {

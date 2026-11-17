@@ -134,9 +134,9 @@ function hasTools() { return S.inv.pied > 0 || S.inv.crochets > 0; }
 function labelFor(c) {
   switch (c.t) {
     case 'ent': { const e = c.e;
-      if (e.kind === 'car') return e.owner ? 'Monter dans ta voiture' : 'Voiture';
+      if (e.kind === 'car') return e.patrol ? 'Monter dans la patrouille' : e.pulled ? 'Contrôler le conducteur' : e.owner ? 'Monter dans ta voiture' : 'Voiture';
       if (e.kind === 'static') return 'Parler à ' + e.name;
-      if (e.kind === 'npc') return e.stun > 0 ? 'Aider ' + e.name : 'Parler à ' + e.name + (S.equip.weapon ? '  [F] Braquer' : '');
+      if (e.kind === 'npc') return e.sus && S.duty ? 'Contrôler ' + e.name + '  [C] Menotter' : e.stun > 0 ? 'Aider ' + e.name : 'Parler à ' + e.name + (S.equip.weapon ? '  [F] Braquer' : '');
       if (e.kind === 'cop') return 'Parler à l\'agent';
       return e.special ? 'Caresser ' + e.name : 'Caresser'; }
     case 'pet': return 'Caresser ' + c.e.name;
@@ -212,6 +212,7 @@ function staticTalk(e) {
   UI.say(def.name, lines, ch);
 }
 function npcTalk(e) {
+  if (Game.policeTalk && Game.policeTalk(e)) return;
   if (e.kid || e.mainChar || (e.role && S.role !== 'main')) { Game.kidTalk(e); return; }
   if (e.stun > 0) { e.stun = 0; UI.toast(e.name + ' se relève, groggy.'); return; }
   e.talk = 3.5; E.faceTo(e, P.x, P.y);

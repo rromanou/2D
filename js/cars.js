@@ -10,7 +10,8 @@ const MODELS = {
   citadine: { n: 'Citadine', price: 1800, kmh: 95, acc: 120, grip: 8, turn: 2.6, hp: 100, len: 20 },
   berline: { n: 'Berline', price: 5200, kmh: 130, acc: 150, grip: 9, turn: 2.4, hp: 140, len: 24 },
   suv: { n: 'SUV', price: 9000, kmh: 125, acc: 140, grip: 10, turn: 2.2, hp: 200, len: 25 },
-  sport: { n: 'Sportive', price: 14000, kmh: 190, acc: 230, grip: 6.5, turn: 2.7, hp: 110, len: 23 }
+  sport: { n: 'Sportive', price: 14000, kmh: 190, acc: 230, grip: 6.5, turn: 2.7, hp: 110, len: 23 },
+  patrouille: { n: 'Patrouille', price: 0, kmh: 185, acc: 210, grip: 9, turn: 2.6, hp: 220, len: 25 }
 };
 const COLORS = ['#c8403a', '#3a6fc8', '#4fa05a', '#e8c030', '#f2f2f2', '#2b2b33', '#8a63c9', '#e87a2a'];
 const WINGS = ['Aucun', 'Petit aileron', 'Grand aileron'];
@@ -23,7 +24,7 @@ const spec = c => {
 /* ================================================================== */
 /*  Carte de l'autoroute                                               */
 /* ================================================================== */
-const HW = 260, HH = 18, HAX = [50, 130, 210];
+const HW = 240, HH = 18, HAX = [40, 120, 200];
 function buildHighway() {
   if (W.maps.autoroute) return;
   const m = { name: 'autoroute', w: HW, h: HH, outdoor: true, ground: new Uint8Array(HW * HH), solid: new Uint8Array(HW * HH), statics: [], doors: [], zones: [], npcs: [], animals: [], lights: [], houses: [], trees: [], bg: null, title: 'Autoroute', ret: null, ents: [], hw: true };
@@ -64,19 +65,19 @@ function drawCarShape(ctx, x, y, ang, o) {
   ctx.fillStyle = o.color; ctx.fillRect(-hl + 1, -hw + 1, len - 2, wd - 2);
   ctx.fillStyle = shade(o.color, 25); ctx.fillRect(-hl + 2, -hw + 1, len - 4, 2);
   if (o.police) { ctx.fillStyle = '#f2f2f2'; ctx.fillRect(-hl + 5, -hw + 1, 7, wd - 2); }
-  ctx.fillStyle = '#9ad8f0'; ctx.fillRect(hl - 9, -hw + 2, 5, wd - 4); ctx.fillStyle = '#6fb0cc'; ctx.fillRect(-hl + 5, -hw + 2, 4, wd - 4);
+  ctx.fillStyle = o.tint ? '#161c26' : '#9ad8f0'; ctx.fillRect(hl - 9, -hw + 2, 5, wd - 4); ctx.fillStyle = o.tint ? '#10151d' : '#6fb0cc'; ctx.fillRect(-hl + 5, -hw + 2, 4, wd - 4);
   ctx.fillStyle = '#2b3a48'; ctx.fillRect(-2, -hw + 2, 6, wd - 4);
   if (o.wing) { ctx.fillStyle = '#1b1b22'; ctx.fillRect(-hl - 1, -hw - 1, 2, wd + 2); if (o.wing > 1) ctx.fillRect(-hl - 3, -hw - 2, 3, wd + 4); }
   const lights = o.lights || o.ai;
-  ctx.fillStyle = lights ? '#fff8c0' : '#d8d4a8'; ctx.fillRect(hl - 1, -hw + 1, 2, 3); ctx.fillRect(hl - 1, hw - 4, 2, 3);
-  ctx.fillStyle = o.brake ? '#ff3030' : '#8a1f1f'; ctx.fillRect(-hl, -hw + 1, 1, 3); ctx.fillRect(-hl, hw - 4, 1, 3);
+  ctx.fillStyle = lights ? '#fff8c0' : '#d8d4a8'; ctx.fillRect(hl - 1, -hw + 1, 2, 3); if (o.hl) { ctx.fillStyle = '#3a3a40'; } ctx.fillRect(hl - 1, hw - 4, 2, 3);
+  ctx.fillStyle = o.brake ? '#ff3030' : '#8a1f1f'; ctx.fillRect(-hl, -hw + 1, 1, 3); if (o.tl) ctx.fillStyle = '#2a2a2e'; ctx.fillRect(-hl, hw - 4, 1, 3);
   const blink = Math.floor(C.now * 3) % 2 === 0;
   if (o.haz && blink) { ctx.fillStyle = '#ffa020'; ctx.fillRect(hl - 2, -hw, 3, 2); ctx.fillRect(hl - 2, hw - 2, 3, 2); ctx.fillRect(-hl, -hw, 3, 2); ctx.fillRect(-hl, hw - 2, 3, 2); }
   if (o.siren) { const t = Math.floor(C.now * 6) % 2; ctx.fillStyle = t ? '#ff2a2a' : '#2a5aff'; ctx.fillRect(-1, -hw + 3, 3, 3); ctx.fillStyle = t ? '#2a5aff' : '#ff2a2a'; ctx.fillRect(-1, hw - 6, 3, 3); }
   if (o.smoke) { ctx.fillStyle = 'rgba(200,200,200,0.6)'; ctx.fillRect(hl - 4 + Math.round(Math.sin(C.now * 5) * 2), -3 + Math.round(Math.cos(C.now * 4) * 2), 5, 5); ctx.fillStyle = 'rgba(90,90,90,0.6)'; ctx.fillRect(hl - 9, -2 + Math.round(Math.sin(C.now * 6)), 4, 4); }
   ctx.restore();
 }
-Cars.drawCar = (ctx, e, camX, camY) => drawCarShape(ctx, e.x - camX, e.y - 5 - camY, e.ang, { color: e.color, len: e.len, ai: e.ai && C.cur && C.cur.hw || (S.time / 60 > 19 || S.time / 60 < 6), haz: e.haz || e.crash, brake: e.brake, siren: e.cop && e.siren, police: e.cop, smoke: e.crash || e.smoke, wing: e.wing });
+Cars.drawCar = (ctx, e, camX, camY) => drawCarShape(ctx, e.x - camX, e.y - 5 - camY, e.ang, { color: e.color, len: e.len, ai: e.ai && C.cur && C.cur.hw || (S.time / 60 > 19 || S.time / 60 < 6), haz: e.haz || e.crash || e.pulled, brake: e.brake, siren: (e.cop || e.ally) && e.siren, police: e.cop || e.police || e.ally, smoke: e.crash || e.smoke || (e.def && e.def.smoke), tint: e.def && e.def.tint, hl: e.def && e.def.hl, tl: e.def && e.def.tl, wing: e.wing });
 Cars.drawPlayer = (ctx, camX, camY) => { const c = P.car; drawCarShape(ctx, P.x - camX, P.y - 5 - camY, c.ang, { color: c.color, len: c.len, lights: c.lights, haz: c.haz, brake: c.braking, wing: c.wing, smoke: c.hp <= 15, siren: c.siren, police: c.police }); };
 
 /* ================================================================== */
@@ -102,27 +103,36 @@ Cars.enter = e => {
   C.pets = []; P.run = false; P.moving = false; U.sfx('door');
   UI.toast('Au volant : flèches/ZQSD, Maj = frein à main (drift).', 'ok');
 };
+Cars.enterPolice = e => {
+  if (!licOk()) { UI.toast('Il faut un permis valide pour conduire la voiture de patrouille.', 'err'); return; }
+  P.car = { model: 'patrouille', police: true, color: '#1b2a52', wing: 0, len: 25, ang: e.ang || 0, vx: 0, vy: 0, hp: e.hp || 220, lights: S.time / 60 > 19 || S.time / 60 < 6, haz: false, siren: false, pass: [] };
+  P.x = e.x; P.y = e.y; C.cur.ents = C.cur.ents.filter(x => x !== e); C.pets = []; P.run = false; P.moving = false; U.sfx('door');
+  UI.toast('Patrouille : K = sirène, H = flashers, L = phares.', 'ok');
+};
 Cars.exit = () => {
   const c = P.car; if (!c) return;
   if (Math.hypot(c.vx, c.vy) / KMH > 12) { UI.toast('Arrête-toi d\'abord pour sortir.', 'err'); return; }
-  S.car.hp = c.hp; S.car.map = C.cur.name; S.car.x = P.x; S.car.y = P.y; S.car.ang = c.ang;
-  placeParked(C.cur);
+  if (c.police) parkPolice(c); else { S.car.hp = c.hp; S.car.map = C.cur.name; S.car.x = P.x; S.car.y = P.y; S.car.ang = c.ang; placeParked(C.cur); }
   P.car = null; P.x += Math.cos(c.ang + Math.PI / 2) * 18; P.y += Math.sin(c.ang + Math.PI / 2) * 18;
-  if (W.hit(C.cur, P.x, P.y, 5, 4)) { P.x = S.car.x; P.y = S.car.y + 14; }
+  if (W.hit(C.cur, P.x, P.y, 5, 4)) { P.x = c.police ? P.x - Math.cos(c.ang + Math.PI / 2) * 30 : S.car.x; P.y = c.police ? P.y - Math.sin(c.ang + Math.PI / 2) * 30 : S.car.y + 14; }
+  if (c.police && RG.Police && RG.Police.afterExit) RG.Police.afterExit(c);
   if (G.syncPets) { G.syncPets(); G.placePets && G.placePets(); }
   U.sfx('door');
 };
+function parkPolice(c) {
+  C.cur.ents.push(E.make('car', { patrol: true, police: true, x: P.x, y: P.y, ang: c.ang, color: '#1b2a52', len: 25, spd: 0, hp: c.hp, vx: 0, vy: 0 }));
+}
 function placeParked(m) {
   if (!S.car || !m) return;
   m.ents = m.ents.filter(e => !e.owner);
   if (S.car.map !== m.name || P.car) return;
   m.ents.push(E.make('car', { owner: true, x: S.car.x, y: S.car.y, ang: S.car.ang || 0, color: S.car.color, len: MODELS[S.car.model].len, wing: (S.car.up || {}).wing | 0, spd: 0, hp: S.car.hp }));
 }
-G.carInteract = e => { if (e.owner) Cars.enter(e); else UI.toast('Ce n\'est pas ta voiture.'); };
+G.carInteract = e => { if (e.patrol) { if (S.duty) Cars.enterPolice(e); else UI.toast('Voiture réservée aux policiers en service.', 'err'); } else if (e.pulled && S.duty && RG.Police) RG.Police.control(e); else if (e.owner) Cars.enter(e); else UI.toast('Ce n\'est pas ta voiture.'); };
 const oldInteract = G.interact;
 G.interact = () => { if (P.car) { Cars.exit(); return; } oldInteract(); };
 Cars.drive = (dt, keys) => {
-  const c = P.car, m = C.cur, sp = spec(S.car || { model: c.model });
+  const c = P.car, m = C.cur, sp = spec(c.police ? { model: 'patrouille' } : (S.car || { model: c.model }));
   const up = keys.up, down = keys.down, hb = keys.run;
   let steer = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
   const maxV = (c.hp <= 15 ? 35 : sp.kmh) * KMH, fx = Math.cos(c.ang), fy = Math.sin(c.ang);
@@ -187,15 +197,18 @@ function highwayLinks(c) {
 /*  Circulation                                                        */
 /* ================================================================== */
 const carColor = () => pick(['#c8403a', '#3a6fc8', '#4fa05a', '#e8c030', '#d8d8d8', '#2b2b33', '#8a63c9', '#e87a2a', '#8a8a95']);
+function speedPick() { const f = S.crimeF || 1; return Math.random() < 0.12 * f ? 130 + ri(0, 30) : pick([75, 90, 100, 105, 110, 110, 115, 125]); }
 function mkTraffic(x, y, dir, vkmh, lane) {
-  return E.make('car', { ai: true, x, y, ang: dir > 0 ? 0 : Math.PI, dir, lane, color: carColor(), len: pick([20, 22, 24, 26]), vx: dir * vkmh * KMH, vy: 0, base: vkmh * KMH, v: vkmh * KMH, hp: 100, crash: false });
+  const f = S.crimeF || 1, rd = k => Math.random() < k * f;
+  const def = { smoke: rd(0.05), tint: rd(0.07), hl: rd(0.07), tl: rd(0.05) };
+  return E.make('car', { def,  ai: true, x, y, ang: dir > 0 ? 0 : Math.PI, dir, lane, color: carColor(), len: pick([20, 22, 24, 26]), vx: dir * vkmh * KMH, vy: 0, base: vkmh * KMH, v: vkmh * KMH, hp: 100, crash: false });
 }
 function spawnTraffic(m) {
   if (m.traffic) return; m.traffic = true;
   if (m.hw) {
     for (let i = 0; i < 34; i++) {
       const east = i % 2 === 0, row = east ? (Math.random() < 0.5 ? 8 : 9) : (Math.random() < 0.5 ? 5 : 6);
-      const v = pick([75, 90, 100, 105, 110, 115, 125, 140]);
+      const v = speedPick();
       m.ents.push(mkTraffic(ri(5, HW - 5) * T, row * T + 12, east ? 1 : -1, v, row));
     }
   } else if (m.name === 'world') {
@@ -206,7 +219,7 @@ function spawnTraffic(m) {
   }
 }
 function trafficStep(m, dt) {
-  const cars = m.ents.filter(e => e.kind === 'car' && !e.owner);
+  const cars = m.ents.filter(e => e.kind === 'car' && !e.owner && !e.patrol && !e.ally);
   const lim = m.hw ? 140 * KMH : 50 * KMH;
   for (const e of cars) {
     if (e.cop) continue;
@@ -216,7 +229,10 @@ function trafficStep(m, dt) {
     for (const o of cars.concat(P.car ? [{ x: P.x, y: P.y, vx: P.car.vx, crash: false }] : [])) {
       if (o === e || Math.abs(o.y - e.y) > 9) continue; const d = (o.x - e.x) * e.dir; if (d > 0 && d < ad) { ad = d; ahead = o; }
     }
-    let target = e.base;
+    if (e.sus) { ahead = null; ad = 1e9; }
+    e.yielding = !!(P.car && P.car.siren && !e.sus && !e.pulled && Math.abs(e.x - P.x) < 320 && Math.abs(e.y - P.y) < 80);
+    let target = e.pullAt && !e.pulled ? Math.min(e.base, 30 * KMH) : e.base;
+    if (e.yielding) target = Math.min(target, 28 * KMH);
     if (ahead && ad < 58) { const av = Math.abs(ahead.vx || 0); target = ahead.crash ? 0 : Math.min(target, av); if (ad < 28) target = Math.min(target, av * 0.5); }
     e.v += Math.max(-220 * dt, Math.min(110 * dt, target - e.v)); e.brake = target < e.v - 5;
     if (ahead && ad < 20 && !ahead.crash && Math.abs((ahead.vx || 0) - e.v * e.dir) > 20 * KMH && m.hw && Math.random() < 0.02) { e.crash = true; e.crashT = 25; ahead.crash = ahead.owner ? false : true; ahead.crashT = 25; ahead.vx = 0; }
@@ -224,16 +240,17 @@ function trafficStep(m, dt) {
     if (e.x < 3 * T) { e.x = (m.w - 4) * T; } if (e.x > (m.w - 3) * T) { e.x = 4 * T; }
     // changement de voie si bloqué
     if (m.hw && ahead && ad < 36 && ahead.crash && !e.sw) { const alt = e.lane === 8 ? 9 : e.lane === 9 ? 8 : e.lane === 5 ? 6 : 5; if (!cars.some(o => o !== e && Math.abs(o.y - (alt * T + 12)) < 9 && Math.abs(o.x - e.x) < 40)) { e.lane = alt; e.sw = 3; } }
-    if (e.sw) { e.sw -= dt; } const ty = e.lane * T + 12; e.y += Math.max(-30 * dt, Math.min(30 * dt, ty - e.y));
+    if (e.sw) { e.sw -= dt; } let ty = e.lane * T + 12;
+    if (e.pulled || e.pullAt || e.yielding) ty = m.hw ? (e.dir > 0 ? 10 * T + 8 : 4 * T + 8) : ty + (e.dir > 0 ? 6 : -6); e.y += Math.max(-30 * dt, Math.min(30 * dt, ty - e.y));
     e.ang = Math.atan2((ty - e.y) * 0.4, e.dir * 20) + (e.dir < 0 ? Math.PI : 0);
   }
   m.ents = m.ents.filter(e => !e.remove);
   const n = m.ents.filter(e => e.kind === 'car' && e.ai && !e.cop).length, want = m.hw ? 34 : 18;
-  if (n < want && (m.respawn || 0) > 0) { m.respawn--; const east = Math.random() < 0.5, row = m.hw ? (east ? 8 : 5) + ri(0, 1) : pick([25, 36, 47, 69, 101, 113, 125, 137, 149]); const x = east ? 4 * T : (m.w - 5) * T; m.ents.push(mkTraffic(x, row * T + 12, east ? 1 : -1, m.hw ? pick([90, 105, 115]) : 40, row)); }
+  if (n < want && (m.respawn || 0) > 0) { m.respawn--; const east = Math.random() < 0.5, row = m.hw ? (east ? 8 : 5) + ri(0, 1) : pick([25, 36, 47, 69, 101, 113, 125, 137, 149]); const x = east ? 4 * T : (m.w - 5) * T; m.ents.push(mkTraffic(x, row * T + 12, east ? 1 : -1, m.hw ? speedPick() : 40, row)); }
 }
 // excès de vitesse -> poursuite
 function violations(dt) {
-  const c = P.car; if (!c) { speedTimer = 0; return; }
+  const c = P.car; if (!c || c.police) { speedTimer = 0; return; }
   const kmh = Math.hypot(c.vx, c.vy) / KMH, lim = limitHere();
   if (kmh > lim + 15) { speedTimer += dt; if (speedTimer > 4) { speedTimer = 0; const p = kmh > lim + 40 ? 0.75 : 0.4; if (Math.random() < p && S.wanted < 3) { G.addWanted(kmh > lim + 40 ? 2 : 1); UI.toast('Excès de vitesse ! ' + Math.round(kmh) + ' km/h pour ' + lim + '.', 'err'); } } } else speedTimer = Math.max(0, speedTimer - dt);
   if (!licOk()) {
@@ -268,8 +285,8 @@ function copCars(dt) {
   }
   m.ents = m.ents.filter(e => !e.remove);
 }
-Cars.forceExit = () => { const c = P.car; if (!c) return; S.car.hp = c.hp; S.car.map = C.cur.name; S.car.x = P.x; S.car.y = P.y; S.car.ang = c.ang; placeParked(C.cur); P.car = null; if (G.syncPets) G.syncPets(); };
-Cars.placeParked = placeParked;
+Cars.forceExit = () => { const c = P.car; if (!c) return; if (c.police) { parkPolice(c); P.car = null; if (RG.Police && RG.Police.afterExit) RG.Police.afterExit(c); return; } S.car.hp = c.hp; S.car.map = C.cur.name; S.car.x = P.x; S.car.y = P.y; S.car.ang = c.ang; placeParked(C.cur); P.car = null; if (G.syncPets) G.syncPets(); };
+Cars.placeParked = placeParked; Cars.KMH = KMH; Cars.limitHere = limitHere; Cars.licOk = licOk;
 function dynLights() {
   const m = C.cur; if (!m || !m.outdoor) return;
   m.lights = m.lights.filter(l => !l.dyn);
@@ -296,7 +313,7 @@ L.update = dt => {
   dynLights();
 };
 const oldInit = L.init;
-L.init = () => { oldInit(); buildHighway(); S.lic = S.lic || { theory: false, pass: false, exp: 0 }; };
+L.init = () => { oldInit(); buildHighway(); if (S.crimeF == null) S.crimeF = 1; S.lic = S.lic || { theory: false, pass: false, exp: 0 }; };
 
 /* ================================================================== */
 /*  Auto-école, concessionnaire, garage                                */
@@ -321,6 +338,8 @@ const MENUS = {
   'x:garage': { label: 'Atelier du garage', fn: () => garage() }
 };
 G.xMenus = MENUS;
+const oldLZ0 = G.lifeZone;
+G.lifeZone = z => { if (z.action && z.action.startsWith('x:') && MENUS[z.action]) { MENUS[z.action].fn(); return; } oldLZ0(z); };
 function dealer() {
   let color = COLORS[0];
   UI.modal({ title: 'Concessionnaire', cls: 'wide',

@@ -24,6 +24,9 @@ D.ITEMS = {
   hache:    { n: 'Hache',            k: 'tool',   p: 60,  d: 'Pour couper du bois en forêt.' },
   lettre:   { n: 'Lettre',           k: 'misc',   p: 0,   d: 'Une lettre cachetée.' },
   colis:    { n: 'Colis',            k: 'misc',   p: 0,   d: 'Un colis à livrer.' },
+  taser:    { n: 'Taser', k: 'weapon', p: 0, w: 'taser', d: 'Équipement de service : paralyse un suspect.', duty: 1 },
+  matraque: { n: 'Matraque', k: 'weapon', p: 0, w: 'baton', d: 'Équipement de service.', duty: 1 },
+  pistolet_s: { n: 'Pistolet de service', k: 'weapon', p: 0, w: 'gun', d: 'Arme de service. Utilise des balles.', duty: 1 },
   couteau:  { n: 'Couteau',          k: 'weapon', p: 120, w: 'knife', d: 'Menace à bout portant.', ill: 1 },
   pistolet: { n: 'Pistolet',         k: 'weapon', p: 900, w: 'gun',   d: 'Nécessite des balles pour tirer.', ill: 1 },
   fusil:    { n: 'Fusil à pompe',    k: 'weapon', p: 2400, w: 'shotgun', d: 'Trois projectiles par tir.', ill: 1 },
@@ -74,6 +77,7 @@ D.JOBS = {
   serveur:  { n: 'Serveur', place: 'Restaurant', pay: [26, 40], d: 'Prends les commandes et sers les clients au restaurant (zone de service près des tables).' },
   biblio:   { n: 'Bibliothécaire', place: 'Bibliothèque', pay: [24, 36], d: 'Range les livres par ordre alphabétique à la bibliothèque.' },
   barman:   { n: 'Barman', place: 'Bar', pay: [28, 46], d: 'Prépare des cocktails au comptoir du bar.' },
+  policier: { n: 'Policier', place: 'Commissariat', pay: [120, 120], duty: 1, d: 'Prends ton service au commissariat : 120 $ la minute. Uniforme, armurerie, voiture de patrouille, radio et arrestations. Un permis valide est requis. Service coupé après une minute d\'immobilité.' },
   bucheron: { n: 'Bûcheron', place: 'Forêt', pay: [20, 32], need: 'hache', d: 'Coupe les arbres de la forêt avec ta hache : chaque bûche est payée.' }
 };
 

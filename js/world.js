@@ -60,9 +60,9 @@ const INT = {
     npcs: [{ id: 'rejean', x: 8, y: 3, dir: 'down' }] },
   police: { title: 'Commissariat', w: 14, h: 10, floor: 'tile', wall: '#d6dcea',
     props: [{ k: 'counter', x: 3, y: 4, w: 4, o: { top: '#c8d0e0', front: '#2f4a8c' } }, { k: 'bars', x: 10, y: 5, w: 3, h: 1 }, { k: 'bars', x: 9, y: 2, w: 1, h: 4 }, { k: 'rug', x: 10, y: 2, w: 3, h: 3, o: { col: '#6a6a75' }, flat: 1 },
-      { k: 'desk', x: 2, y: 7, w: 2 }, { k: 'plant', x: 1, y: 2 }, { k: 'crate', x: 11, y: 7 }, { k: 'board', x: 3, y: 0, w: 3 }],
+      { k: 'desk', x: 2, y: 7, w: 2 }, { k: 'plant', x: 1, y: 2 }, { k: 'crate', x: 11, y: 7 }, { k: 'board', x: 3, y: 0, w: 3 }, { k: 'crate', x: 7, y: 2 }, { k: 'crate', x: 8, y: 2 }, { k: 'board', x: 7, y: 0, w: 2 }],
     npcs: [{ id: 'dubois', x: 4, y: 3, dir: 'down' }],
-    zones: [{ x: 3, y: 5, w: 4, h: 1, action: 'bail', label: 'Payer une amende / caution' }], jail: { x: 11, y: 3 } },
+    zones: [{ x: 3, y: 5, w: 4, h: 1, action: 'bail', label: 'Payer une amende / caution' }, { x: 7, y: 3, w: 2, h: 1, action: 'armory', label: 'Armurerie' }, { x: 6, y: 7, w: 3, h: 1, action: 'duty', label: 'Prendre / quitter le service' }], jail: { x: 11, y: 3 } },
   town: { title: 'Mairie', w: 14, h: 10, floor: 'carpet', floorC: '#a8505a', wall: '#f0e6cc',
     props: [{ k: 'counter', x: 5, y: 4, w: 4, o: { top: '#c9a06a', front: '#6a4128' } }, { k: 'rug', x: 4, y: 6, w: 6, h: 2, o: { col: '#2f4a8c' }, flat: 1 }, { k: 'plant', x: 1, y: 2 }, { k: 'plant', x: 12, y: 2 },
       { k: 'poster', x: 2, y: 0, o: { col: '#2f4a8c' } }, { k: 'poster', x: 11, y: 0, o: { col: '#c8503f' } }, { k: 'sofa', x: 1, y: 6, w: 2 }, { k: 'sofa', x: 11, y: 6, w: 2 }],
@@ -112,13 +112,13 @@ const INT = {
     npcs: [{ id: 'bijoutier', x: 5, y: 2, dir: 'down' }], wander: 1 },
   autoecole: { title: 'Auto-école', w: 12, h: 8, floor: 'wood', wall: '#f2ecd0',
     props: [{ k: 'desk', x: 4, y: 3, w: 4 }, { k: 'board', x: 2, y: 0, w: 3 }, { k: 'chair', x: 5, y: 5 }, { k: 'chair', x: 7, y: 5 }, { k: 'plant', x: 10, y: 5 }, { k: 'poster', x: 9, y: 0, o: { col: '#d8a82a' } }],
-    npcs: [{ id: 'moniteur', x: 5, y: 2, dir: 'down' }], wander: 1 },
+    npcs: [{ id: 'moniteur', x: 5, y: 2, dir: 'down' }], zones: [{ x: 4, y: 4, w: 4, h: 1, action: 'x:drive', label: 'Passer le permis' }], wander: 1 },
   concession: { title: 'Concessionnaire', w: 16, h: 10, floor: 'tile', wall: '#dfe6f2',
     props: [{ k: 'counter', x: 11, y: 3, w: 4, o: { top: '#e8f0ff', front: '#2f4a8c' } }, { k: 'rug', x: 2, y: 4, w: 7, h: 4, o: { col: '#2f4a8c' }, flat: 1 }, { k: 'plant', x: 14, y: 7 }, { k: 'plant', x: 1, y: 7 }, { k: 'poster', x: 4, y: 0, o: { col: '#4b78c8' } }, { k: 'poster', x: 8, y: 0, o: { col: '#c8503f' } }],
-    npcs: [{ id: 'vendeur', x: 12, y: 2, dir: 'down' }], wander: 2 },
+    npcs: [{ id: 'vendeur', x: 12, y: 2, dir: 'down' }], zones: [{ x: 11, y: 4, w: 4, h: 1, action: 'x:cars', label: 'Voir les voitures' }], wander: 2 },
   garage: { title: 'Garage', w: 14, h: 9, floor: 'dark', wall: '#4a4a52',
     props: [{ k: 'crate', x: 1, y: 2 }, { k: 'crate', x: 2, y: 2 }, { k: 'barrel', x: 12, y: 3 }, { k: 'barrel', x: 12, y: 4 }, { k: 'counter', x: 8, y: 3, w: 3, o: { top: '#6a6a72', front: '#3b3b44' } }, { k: 'poster', x: 5, y: 0, o: { col: '#e8a93b' } }],
-    npcs: [{ id: 'mecano', x: 9, y: 2, dir: 'down' }], wander: 1 },
+    npcs: [{ id: 'mecano', x: 9, y: 2, dir: 'down' }], zones: [{ x: 8, y: 4, w: 3, h: 1, action: 'x:garage', label: 'Atelier du garage' }], wander: 1 },
   tribunal: { title: 'Tribunal des familles', w: 12, h: 9, floor: 'wood', wall: '#d8d0c0',
     props: [{ k: 'desk', x: 4, y: 3, w: 4 }, { k: 'bookshelf', x: 1, y: 2, w: 2 }, { k: 'bookshelf', x: 9, y: 2, w: 2 }, { k: 'chair', x: 5, y: 5 }, { k: 'chair', x: 7, y: 5 }, { k: 'plant', x: 10, y: 6 }],
     npcs: [{ id: 'juge', x: 5, y: 2, dir: 'down' }], wander: 2 },
@@ -218,7 +218,7 @@ function buildInterior(name, def) {
 /* ------------------------------------------------------------------ */
 const MW = 192, MH = 176;
 const VROADS = [30, 62, 94, 126, 158], HROADS = [24, 35, 46, 68, 100, 112, 124, 136, 148], HWY0 = 160;
-const HWGATES = [40, 96, 150];
+const HWGATES = [30, 94, 158];
 const MAIN_B = [
   { id: 'pet',      bx: 4,  w: 6,  o: { kind: 'shop', text: 'ANIMALERIE', signBg: '#3f7a4a', awn: ['#6fbf5a', '#fff7e6'], wall: '#f3e4c2' } },
   { id: 'hardware', bx: 12, w: 6,  o: { kind: 'shop', text: 'QUINCAILLERIE', signBg: '#8a5a3a', awn: ['#e8a93b', '#fff7e6'], wall: '#e8dcc0' } },
@@ -268,7 +268,7 @@ function buildOutdoor() {
   rectFill(m, 56, 40, 14, 14, PV);
   // routes
   for (const ry of HROADS) rectFill(m, 2, ry, MW - 4, 2, RD);
-  for (const rx of VROADS) rectFill(m, rx, 2, 2, HWY0 - 5, RD);
+  for (const rx of VROADS) rectFill(m, rx, 2, 2, HWY0 - 2, RD);
   rectFill(m, 56, 40, 14, 14, PV);
   // 2. lac, sable, ponton
   const lake = { cx: 108, cy: 9, rx: 13, ry: 5.5 };
@@ -289,14 +289,14 @@ function buildOutdoor() {
   for (let y = HWY0; y < HWY0 + 10; y++) for (let x = 2; x < MW - 2; x++) {
     m.ground[gi(m, x, y)] = RD; m.solid[gi(m, x, y)] = 1;
   }
-  for (const gx of HWGATES) for (let k = 0; k < 2; k++) { m.solid[gi(m, gx + k, HWY0)] = 0; m.ground[gi(m, gx + k, HWY0 - 1)] = PV; m.ground[gi(m, gx + k, HWY0 - 2)] = PV; }
+  for (const gx of HWGATES) for (let k = 0; k < 2; k++) { m.solid[gi(m, gx + k, HWY0)] = 0; }
   // 3. parc
   rectFill(m, 33, 58, 28, 2, PV); rectFill(m, 46, 50, 2, 17, PV);
   // 4. sentiers
   rectFill(m, 12, 9, 2, 15, DIRT); rectFill(m, 6, 3, 15, 7, DIRT);
   rectFill(m, 26, 70, 2, 10, DIRT);
   // 5. ferme : enclos
-  const farm = { x: 6, y: 72, w: 45, h: 21 };
+  const farm = { x: 6, y: 72, w: 23, h: 21 };
 
   // bâtiments rue principale
   const doors = {};
@@ -389,8 +389,8 @@ function buildOutdoor() {
     decor.push({ k: 'fenceV', x: farm.x, y }); decor.push({ k: 'fenceV', x: farm.x + farm.w - 1, y });
     rectSolid(m, farm.x, y, 1, 1, 1); rectSolid(m, farm.x + farm.w - 1, y, 1, 1, 1);
   }
-  for (let y = 76; y < 90; y += 1) for (let x = 30; x < 48; x++) if (y % 4 !== 3) decor.push({ k: 'crop', x, y, o: { col: ['#4fb04f', '#e8a93b', '#d65fa3', '#6fbf5a'][Math.floor((x - 30) / 5) % 4] } });
-  for (let y = 128; y < 148; y++) for (let x = 100; x < 124; x++) if (y % 4 !== 3 && x % 11 !== 5) decor.push({ k: 'crop', x, y, o: { col: ['#e8a93b', '#4fb04f', '#d65fa3', '#6fbf5a'][Math.floor((y - 128) / 5) % 4] } });
+  for (let y = 77; y < 91; y += 1) for (let x = 17; x < 27; x++) if (y % 4 !== 3 && !(x >= 26 && y < 80)) decor.push({ k: 'crop', x, y, o: { col: ['#4fb04f', '#e8a93b', '#d65fa3', '#6fbf5a'][Math.floor((x - 17) / 3) % 4] } });
+  for (let y = 128; y < 148; y++) for (let x = 100; x < 124; x++) if (y % 4 !== 3 && x % 11 !== 5 && m.ground[gi(m, x, y)] === G && !m.solid[gi(m, x, y)]) decor.push({ k: 'crop', x, y, o: { col: ['#e8a93b', '#4fb04f', '#d65fa3', '#6fbf5a'][Math.floor((y - 128) / 5) % 4] } });
   // parc : bancs, massifs
   for (const [bx, by] of [[40, 57], [52, 57], [40, 60], [52, 60]]) { decor.push({ k: 'bench', x: bx, y: by, w: 2 }); rectSolid(m, bx, by, 2, 1, 1); }
   for (const [fx, fy] of [[35, 54], [36, 54], [57, 54], [58, 54], [35, 64], [36, 64], [57, 64], [58, 64]]) decor.push({ k: 'flower', x: fx, y: fy });
@@ -514,7 +514,7 @@ function buildOutdoor() {
   }
   for (const gx of HWGATES) { // bretelles d'accès
     for (let k = 0; k < 2; k++) { R(c, (gx + k) * T, HWY0 * T, T, T, '#6b6f78'); R(c, (gx + k) * T, HWY0 * T, T, 2, '#e8d77a'); }
-    R(c, (gx - 1) * T, (HWY0 - 3) * T + 4, T * 4, 10, '#1b5a8a'); U.drawText(c, 'AUTOROUTE', (gx - 1) * T + 4, (HWY0 - 3) * T + 6, '#fff', null);
+    R(c, (gx + 2) * T, (HWY0 - 3) * T + 4, T * 4, 10, '#1b5a8a'); U.drawText(c, 'AUTOROUTE', (gx + 2) * T + 4, (HWY0 - 3) * T + 6, '#fff', null);
   }
   // ombres des bâtiments
   c.fillStyle = 'rgba(0,0,0,0.18)';

@@ -121,6 +121,9 @@ addEventListener('keydown', e => {
     case 'KeyJ': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'quests') UI.closeModal(); } else if (!UI.dialogOpen()) UI.quests(); break;
     case 'KeyR': if (UI.isModal()) { const m = UI.currentModal(); if (m && m.cls === 'rel') UI.closeModal(); } else if (!UI.dialogOpen()) RG.Life.friends(); break;
     case 'KeyH': if (P.car) RG.Cars.toggle('haz'); break;
+    case 'KeyV': if (RG.Police && P.car && P.car.police) RG.Police.orderPull(); break;
+    case 'KeyK': if (P.car && P.car.police) RG.Cars.toggle('siren'); break;
+    case 'KeyC': if (RG.Police && !UI.isModal() && !UI.dialogOpen()) RG.Police.cuffKey(); break;
     case 'KeyL': if (P.car) RG.Cars.toggle('lights'); break;
     case 'KeyT': if (C.place) RG.Life.rotatePlace(); break;
     case 'KeyB': if (C.cur && C.cur.name === 'home' && !UI.isModal() && !UI.dialogOpen() && !C.place) RG.Life.build(); break;
@@ -438,6 +441,7 @@ function render() {
       ctx.globalCompositeOperation = 'source-over';
     }
   }
+  if (RG.Police && RG.Police.drawWorld) RG.Police.drawWorld(ctx, camX, camY);
   // étiquettes
   for (const it of list) {
     const e = it.e; if (!e || e.hidden || e.kind === 'animal' || e.kind === 'car' || e.kind === 'deco' && false) continue;
@@ -468,6 +472,7 @@ function drawMini() {
   mctx.imageSmoothingEnabled = false;
   mctx.drawImage(m.mini, 0, 0);
   if (S.parcel) { const h = m.houses[S.parcel.hid]; if (h) { mctx.fillStyle = '#ffd54f'; mctx.fillRect(h.doorX - 1, h.doorY - 1, 3, 3); } }
+  if (RG.Police && RG.Police.drawMini) RG.Police.drawMini(mctx, m);
   mctx.fillStyle = '#e0443a';
   for (const e of m.ents) if (e.kind === 'cop' && (S.wanted > 0 || e.chase)) mctx.fillRect(Math.floor(e.x / T) - 1, Math.floor(e.y / T) - 1, 2, 2);
   mctx.fillStyle = '#fff'; if (Math.floor(C.now * 3) % 2) mctx.fillRect(Math.floor(P.x / T) - 1, Math.floor(P.y / T) - 1, 3, 3);

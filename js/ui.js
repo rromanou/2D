@@ -52,7 +52,7 @@ UI.hud = S => {
   el.job.textContent = j ? j.n + ' (niv. ' + (1 + Math.floor(((S.jobxp && S.jobxp[S.job.id]) || 0) / 8)) + ')' : 'Sans emploi';
   let st = ''; for (let i = 0; i < 5; i++) st += '<i class="' + (i < S.wanted ? 'on' : '') + '"></i>';
   el.stars.innerHTML = st; el.stars.style.visibility = S.wanted > 0 ? 'visible' : 'hidden';
-  let eq = ''; if (S.equip.weapon) { const it = D.ITEMS[S.equip.weapon]; eq = it.n; if (it.k === 'weapon' && it.w !== 'knife') eq += ' (' + (S.inv.balles || 0) + ')'; }
+  let eq = ''; if (S.equip.weapon) { const it = D.ITEMS[S.equip.weapon]; eq = it.n; if (it.k === 'weapon' && it.w !== 'knife' && it.w !== 'taser' && it.w !== 'baton') eq += ' (' + (S.inv.balles || 0) + ')'; }
   if (S.equip.mask) eq += (eq ? ' + ' : '') + 'Cagoule';
   el.equip.innerHTML = (S.equip.weapon ? RG.Icons.img(S.equip.weapon, 'ic') + ' ' : '') + esc(eq); el.equip.style.display = eq ? 'block' : 'none';
   UI.hotbar(S);
@@ -191,7 +191,7 @@ UI.inventory = () => {
         let eff = '';
         if (it.h) eff += 'Faim +' + it.h + '<br>'; if (it.t) eff += 'Soif +' + it.t + '<br>'; if (it.hp) eff += 'Santé +' + it.hp + '<br>'; if (it.st) eff += 'Énergie +' + it.st + '<br>';
         h += RG.Icons.img(selItem, '') + '<h3>' + esc(it.n) + ' x' + S.inv[selItem] + '</h3><div class="muted">' + esc(it.d || '') + (it.ill ? '<br>[illégal]' : '') + '</div><div class="muted">' + eff + '</div>';
-        if (it.k === 'weapon' && it.w !== 'knife') h += '<div class="muted">Balles : ' + (S.inv.balles || 0) + '</div>';
+        if (it.k === 'weapon' && it.w !== 'knife' && it.w !== 'taser' && it.w !== 'baton') h += '<div class="muted">Balles : ' + (S.inv.balles || 0) + '</div>';
         if (act) h += '<div class="brow"><button class="go" data-a="' + act.a + '" data-i="' + selItem + '">' + act.l + '</button>' + (act.a === 'use' && S.inv[selItem] > 1 ? '<button data-a="use" data-i="' + selItem + '" data-x="1">x2</button>' : '') + '</div>';
         if (it.k === 'weapon') h += '<div class="muted">Équipé : appuie sur F près de quelqu\'un pour le menacer.</div>';
         if (it.p && it.sell == null && !it.ill && it.k !== 'misc') { /* pas de revente */ }
@@ -279,7 +279,7 @@ UI.jobs = () => {
       for (const id of Object.keys(D.JOBS)) {
         const j = D.JOBS[id];
         const xp = (S.jobxp && S.jobxp[id]) || 0, lv = 1 + Math.floor(xp / 8);
-        h += '<div class="row"><div class="rn"><b>' + esc(j.n) + '</b> <span class="tag">niv. ' + lv + '</span><small>' + esc(j.d) + ' Paie : ' + j.pay[0] + ' à ' + j.pay[1] + ' $ par tâche.' + (j.need ? ' Outil requis : ' + D.ITEMS[j.need].n + '.' : '') + '</small></div>';
+        h += '<div class="row"><div class="rn"><b>' + esc(j.n) + '</b> <span class="tag">niv. ' + lv + '</span><small>' + esc(j.d) + (j.duty ? ' Paie : ' + j.pay[0] + ' $ par minute de service.' : ' Paie : ' + j.pay[0] + ' à ' + j.pay[1] + ' $ par tâche.') + (j.need ? ' Outil requis : ' + D.ITEMS[j.need].n + '.' : '') + '</small></div>';
         h += (S.job && S.job.id === id) ? '<span class="tag">Actuel</span>' : '<button data-a="take" data-i="' + id + '">Choisir</button>';
         h += '</div>';
       }
