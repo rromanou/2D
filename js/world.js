@@ -216,7 +216,9 @@ function buildInterior(name, def) {
 /* ------------------------------------------------------------------ */
 /*  Carte extérieure                                                   */
 /* ------------------------------------------------------------------ */
-const MW = 128, MH = 96;
+const MW = 192, MH = 176;
+const VROADS = [30, 62, 94, 126, 158], HROADS = [24, 35, 46, 68, 100, 112, 124, 136, 148], HWY0 = 160;
+const HWGATES = [40, 96, 150];
 const MAIN_B = [
   { id: 'pet',      bx: 4,  w: 6,  o: { kind: 'shop', text: 'ANIMALERIE', signBg: '#3f7a4a', awn: ['#6fbf5a', '#fff7e6'], wall: '#f3e4c2' } },
   { id: 'hardware', bx: 12, w: 6,  o: { kind: 'shop', text: 'QUINCAILLERIE', signBg: '#8a5a3a', awn: ['#e8a93b', '#fff7e6'], wall: '#e8dcc0' } },
@@ -262,11 +264,11 @@ function buildOutdoor() {
   const placed = []; // empreintes bâties : {x,y,w,h}
 
   // 1. pavés
-  for (const ry of [22, 44, 66]) rectFill(m, 2, ry, 124, 2, PV);
+  for (const ry of [22, 44, 66]) rectFill(m, 2, ry, MW - 4, 2, PV);
   rectFill(m, 56, 40, 14, 14, PV);
   // routes
-  for (const ry of [24, 35, 46, 68, 81]) rectFill(m, 2, ry, 124, 2, RD);
-  for (const rx of [30, 62, 94]) rectFill(m, rx, 2, 2, 92, RD);
+  for (const ry of HROADS) rectFill(m, 2, ry, MW - 4, 2, RD);
+  for (const rx of VROADS) rectFill(m, rx, 2, 2, HWY0 - 5, RD);
   rectFill(m, 56, 40, 14, 14, PV);
   // 2. lac, sable, ponton
   const lake = { cx: 108, cy: 9, rx: 13, ry: 5.5 };
@@ -276,6 +278,18 @@ function buildOutdoor() {
     else if (d < 1.5 && m.ground[gi(m, x, y)] === G) m.ground[gi(m, x, y)] = SA;
   }
   rectFill(m, 108, 10, 2, 8, PIER); rectSolid(m, 108, 10, 2, 8, 0);
+  const lake2 = { cx: 146, cy: 116, rx: 12, ry: 7 };
+  for (let y = 100; y < 130; y++) for (let x = 130; x < 165; x++) {
+    const d = Math.pow((x - lake2.cx) / lake2.rx, 2) + Math.pow((y - lake2.cy) / lake2.ry, 2);
+    if (m.ground[gi(m, x, y)] === RD) continue;
+    if (d < 1) { m.ground[gi(m, x, y)] = WA; m.solid[gi(m, x, y)] = 2; }
+    else if (d < 1.5 && m.ground[gi(m, x, y)] === G) m.ground[gi(m, x, y)] = SA;
+  }
+  // autoroute visible : bande dans le sud
+  for (let y = HWY0; y < HWY0 + 10; y++) for (let x = 2; x < MW - 2; x++) {
+    m.ground[gi(m, x, y)] = RD; m.solid[gi(m, x, y)] = 1;
+  }
+  for (const gx of HWGATES) for (let k = 0; k < 2; k++) { m.solid[gi(m, gx + k, HWY0)] = 0; m.ground[gi(m, gx + k, HWY0 - 1)] = PV; m.ground[gi(m, gx + k, HWY0 - 2)] = PV; }
   // 3. parc
   rectFill(m, 33, 58, 28, 2, PV); rectFill(m, 46, 50, 2, 17, PV);
   // 4. sentiers
@@ -307,8 +321,25 @@ function buildOutdoor() {
     m.doors.push({ x: dx, y: dy, to: b.id, id: b.id, label: INT[b.id].title });
     if (b.id === 'cine' || b.id === 'arcade') for (let k = 0; k < 3; k++) m.lights.push({ x: (b.bx + 1.5 + k * 2) * T, y: 33 * T, r: 36, c: k % 2 ? '#ff4fa0' : '#4fd8ff' });
   }
+  const decoHouse = (bx, by) => {
+    const w = 5, dx = bx + 2, dy = by + 2, hv = Math.floor(U.hash(bx, by, 5) * 1000);
+    const o = { kind: 'house', wall: HWALLS[hv % HWALLS.length], roof: HROOFS[(hv >> 3) % HROOFS.length], door: HDOORS[(hv >> 5) % HDOORS.length] };
+    m.statics.push({ kind: 'bld', img: Sp.building(w, o), x: bx * T - 1, y: (by - 2) * T - 1, sortY: (by + 3) * T });
+    rectSolid(m, bx, by, w, 3, 1); placed.push({ x: bx - 1, y: by - 2, w: w + 2, h: 6 });
+    m.ground[gi(m, dx, dy + 1)] = PV;
+  };
+  const SLAKE = { cx: 146, cy: 116, rx: 12, ry: 7 };
+  const featRects = [{ x: 133, y: 106, w: 26, h: 20 }, { x: 98, y: 127, w: 28, h: 22 }, { x: 3, y: 127, w: 27, h: 20 }];
+  const inFeat = (bx, by) => featRects.some(r => bx + 5 > r.x && bx < r.x + r.w && by - 2 < r.y + r.h && by + 4 > r.y);
+  const crossesRoad = bx => VROADS.some(rx => bx + 5 > rx - 1 && bx < rx + 3);
+  for (const R0 of [112, 124, 136, 148]) for (let bx = 4; bx < MW - 8; bx += 7) {
+    if (crossesRoad(bx) || inFeat(bx, R0 - 4)) continue;
+    if (U.hash(bx, R0, 77) < 0.12) continue;
+    decoHouse(bx, R0 - 4);
+  }
+  for (const R0 of [24, 68]) for (let bx = 129; bx < MW - 8; bx += 7) { if (crossesRoad(bx)) continue; decoHouse(bx, R0 === 24 ? 19 : 63); }
   for (const b of MAIN_B3) {
-    const by = 77, dx = b.bx + Math.floor(b.w / 2), dy = by + 2;
+    const by = 96, dx = b.bx + Math.floor(b.w / 2), dy = by + 2;
     m.statics.push({ kind: 'bld', img: Sp.building(b.w, b.o), x: b.bx * T - 1, y: (by - 2) * T - 1, sortY: (by + 3) * T });
     rectSolid(m, b.bx, by, b.w, 3, 1); m.solid[gi(m, dx, dy)] = 0;
     placed.push({ x: b.bx - 1, y: by - 2, w: b.w + 2, h: 6 });
@@ -359,6 +390,7 @@ function buildOutdoor() {
     rectSolid(m, farm.x, y, 1, 1, 1); rectSolid(m, farm.x + farm.w - 1, y, 1, 1, 1);
   }
   for (let y = 76; y < 90; y += 1) for (let x = 30; x < 48; x++) if (y % 4 !== 3) decor.push({ k: 'crop', x, y, o: { col: ['#4fb04f', '#e8a93b', '#d65fa3', '#6fbf5a'][Math.floor((x - 30) / 5) % 4] } });
+  for (let y = 128; y < 148; y++) for (let x = 100; x < 124; x++) if (y % 4 !== 3 && x % 11 !== 5) decor.push({ k: 'crop', x, y, o: { col: ['#e8a93b', '#4fb04f', '#d65fa3', '#6fbf5a'][Math.floor((y - 128) / 5) % 4] } });
   // parc : bancs, massifs
   for (const [bx, by] of [[40, 57], [52, 57], [40, 60], [52, 60]]) { decor.push({ k: 'bench', x: bx, y: by, w: 2 }); rectSolid(m, bx, by, 2, 1, 1); }
   for (const [fx, fy] of [[35, 54], [36, 54], [57, 54], [58, 54], [35, 64], [36, 64], [57, 64], [58, 64]]) decor.push({ k: 'flower', x: fx, y: fy });
@@ -369,8 +401,8 @@ function buildOutdoor() {
   }
   // lampadaires
   for (const [ly, xs] of [[22, 0], [44, 0], [66, 0]]) {
-    for (let x = 6; x < 124; x += 8) {
-      if ((x >= 29 && x <= 32) || (x >= 61 && x <= 64) || (x >= 93 && x <= 96)) continue;
+    for (let x = 6; x < MW - 4; x += 8) {
+      if (VROADS.some(rx => x >= rx - 1 && x <= rx + 2)) continue;
       if (ly === 44 && x >= 55 && x <= 70) continue;
       if (m.doors.some(d => Math.abs(d.x - x) <= 2 && d.y >= ly - 3 && d.y <= ly + 3) || m.houses.some(h => Math.abs(h.doorX - x) <= 2 && h.doorY >= ly - 3 && h.doorY <= ly + 3)) continue;
       decor.push({ k: 'lamp', x, y: ly }); m.solid[gi(m, x, ly)] = 1;
@@ -398,8 +430,10 @@ function buildOutdoor() {
   for (let y = 3; y <= 24; y++) for (let x = 8; x <= 18; x++) mark(x, y);
   for (let y = farm.y; y < farm.y + farm.h; y++) for (let x = farm.x; x < farm.x + farm.w; x++) mark(x, y);
   for (let y = 70; y <= 80; y++) for (let x = 24; x <= 29; x++) mark(x, y);
+  for (let y = 127; y < 149; y++) for (let x = 98; x < 126; x++) mark(x, y);
+  for (let y = HWY0 - 3; y < HWY0 + 11; y++) for (let x = 0; x < MW; x++) mark(x, y);
   for (let y = 52; y <= 66; y++) for (let x = 33; x <= 60; x++) noTree[gi(m, x, y)] = 2; // parc : arbres maîtrisés
-  const forestZone = (x, y) => (y <= 17 && !(x >= 88 && x <= 124 && y >= 1 && y <= 17 && ((x - 108) ** 2 / 14 ** 2 + (y - 9) ** 2 / 6.5 ** 2 < 1.6))) || y >= 70 || x <= 4 || x >= 124;
+  const forestZone = (x, y) => (y <= 17 && !(x >= 88 && x <= 124 && y >= 1 && y <= 17 && ((x - 108) ** 2 / 14 ** 2 + (y - 9) ** 2 / 6.5 ** 2 < 1.6))) || (y >= 70 && y <= 93) || x <= 4 || x >= MW - 4 || y >= 168 || (x >= 3 && x <= 29 && y >= 127 && y <= 147) || (x >= 170 && y >= 20);
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
     const border = x <= 1 || y <= 1 || x >= MW - 2 || y >= MH - 2;
     const nt = noTree[gi(m, x, y)];
@@ -438,8 +472,8 @@ function buildOutdoor() {
     } else if (g === RD) {
       R(c, x, y, T, T, '#6b6f78');
       for (let i = 0; i < 3; i++) R(c, x + Math.floor(U.hash(tx, ty, i + 60) * 14), y + Math.floor(U.hash(tx, ty, i + 61) * 15), 2, 1, '#62666f');
-      const horiz = ty === 24 || ty === 46 || ty === 68, vert = tx === 30 || tx === 62 || tx === 94;
-      if (horiz && ty < MH && gAt(tx, ty + 1) === RD && (tx & 1) === 0) R(c, x, y + 15, 8, 1, '#e8d77a');
+      const horiz = HROADS.includes(ty) && ty !== 35, vert = VROADS.includes(tx);
+      if (horiz && ty < HWY0 && gAt(tx, ty + 1) === RD && (tx & 1) === 0) R(c, x, y + 15, 8, 1, '#e8d77a');
       if (vert && gAt(tx + 1, ty) === RD && (ty & 1) === 0) R(c, x + 15, y, 1, 8, '#e8d77a');
       if (gAt(tx, ty - 1) === G || gAt(tx, ty - 1) === PV) R(c, x, y, T, 1, '#8d9199');
       if (gAt(tx, ty + 1) === G || gAt(tx, ty + 1) === PV) R(c, x, y + 15, T, 1, '#8d9199');
@@ -471,11 +505,22 @@ function buildOutdoor() {
     }
   }
   for (const d of decor) Sp.prop(c, d.k, d.x, d.y, d.w || 1, d.h || 1, d.o);
+  for (let y = HWY0; y < HWY0 + 10; y++) for (let x = 2; x < MW - 2; x++) {
+    const px = x * T, py = y * T, r = y - HWY0;
+    R(c, px, py, T, T, r === 0 || r === 9 ? '#9a9ea8' : r === 4 || r === 5 ? '#8a8f98' : (x * 7 + y * 3) % 11 === 0 ? '#50545e' : '#585c66');
+    if (r === 0 || r === 9) { R(c, px, py + 5, T, 2, '#c8ccd4'); R(c, px, py + 9, T, 2, '#6a6e78'); if (x % 4 === 0) R(c, px + 6, py + 3, 2, 10, '#4a4e58'); }
+    if (r === 2 || r === 7) R(c, px, py + (r === 2 ? 15 : 0), T, 1, '#e8e8e8');
+    if ((r === 3 || r === 6) && x % 2 === 0) R(c, px + 2, py + 15, 10, 1, '#e8e8e8');
+  }
+  for (const gx of HWGATES) { // bretelles d'accès
+    for (let k = 0; k < 2; k++) { R(c, (gx + k) * T, HWY0 * T, T, T, '#6b6f78'); R(c, (gx + k) * T, HWY0 * T, T, 2, '#e8d77a'); }
+    R(c, (gx - 1) * T, (HWY0 - 3) * T + 4, T * 4, 10, '#1b5a8a'); U.drawText(c, 'AUTOROUTE', (gx - 1) * T + 4, (HWY0 - 3) * T + 6, '#fff', null);
+  }
   // ombres des bâtiments
   c.fillStyle = 'rgba(0,0,0,0.18)';
   for (const s of m.statics) if (s.kind === 'bld') c.fillRect(s.x + 3, s.sortY - 3, s.img.width - 4, 5);
   m.bg = bg;
-  m.farm = farm; m.lake = lake; m.doorsById = doors;
+  m.farm = farm; m.lake = lake; m.doorsById = doors; m.hwy = { y0: HWY0, gates: HWGATES };
   return m;
 }
 
