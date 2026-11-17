@@ -3,6 +3,7 @@
 const RG = window.RG, U = RG.U, UI = RG.UI, D = RG.Data, E = RG.Ent, W = RG.World, T = RG.T, G = RG.Game, C = RG.core, S = RG.S, L = RG.Life, P = RG.P;
 const esc = UI.esc, money = U.money;
 const Cars = RG.Cars = {};
+const RD = 1;
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const KMH = 1.6; // px/s par km/h
@@ -85,33 +86,41 @@ Cars.drawPlayer = (ctx, camX, camY) => { const c = P.car; drawCarShape(ctx, P.x 
 /* ================================================================== */
 const limitHere = () => C.cur && C.cur.hw ? 110 : C.cur && C.cur.name === 'world' ? 50 : 30;
 const licOk = () => !!(S.lic && S.lic.pass && S.abs < S.lic.exp);
+let hwCool = 0;
+const hwNear = (px, mw) => { const hx = px / mw * HW; let bi = 0; HAX.forEach((g, i) => { if (Math.abs(g * T - hx) < Math.abs(HAX[bi] * T - hx)) bi = i; }); return bi; };
+const GCAP = [0.22, 0.38, 0.54, 0.70, 0.85, 1], GACC = [1.5, 1.25, 1, 0.8, 0.65, 0.5];
+Cars.shift = d => { const c = P.car; if (!c) return; const g = Math.max(1, Math.min(6, (c.gear || 1) + d)); if (g !== c.gear) { c.gear = g; U.sfx('click'); } };
 let speedo = null, spT = 0, speedTimer = 0, lastHit = 0;
 function hud() {
   if (!speedo) { speedo = document.createElement('div'); speedo.style.cssText = 'position:absolute;right:12px;bottom:12px;background:#15151c;color:#fff;border:3px solid #4a3426;box-shadow:0 0 0 2px #2b1b14;padding:6px 10px;font-family:Pixel,monospace;font-size:14px;z-index:6;display:none;text-align:right;line-height:1.3'; document.getElementById('ui').appendChild(speedo); }
   if (!P.car) { speedo.style.display = 'none'; return; }
   const kmh = Math.round(Math.hypot(P.car.vx, P.car.vy) / KMH), lim = limitHere(), over = kmh > lim + 5;
   speedo.style.display = 'block';
-  speedo.innerHTML = '<b style="font-size:24px;color:' + (over ? '#ff5a4a' : '#8dff8d') + '">' + kmh + '</b> km/h<br>Limite ' + lim + (P.car.hp < 35 ? '<br><span style="color:#ff8a4a">Voiture endommagée</span>' : '') + '<br><span style="color:#9aa">H flashers - L phares - E sortir</span>';
+  const gr = (P.car.vx * Math.cos(P.car.ang) + P.car.vy * Math.sin(P.car.ang)) < -2 ? 'R' : (P.car.gear || 1);
+  let ex = '';
+  if (EX) { const left = Math.max(0, Math.ceil(EXAM_T - (C.now - EX.t0))); ex = '<div style="color:#ffe08a;border-bottom:1px solid #555;margin-bottom:3px">EXAMEN - point ' + Math.min(EX.i + 1, EXCP.length) + ' / ' + EXCP.length + '<br>Fautes ' + EX.faults.length + ' / 3 - ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') + '</div>'; }
+  speedo.innerHTML = ex + '<b style="font-size:24px;color:' + (over ? '#ff5a4a' : '#8dff8d') + '">' + kmh + '</b> km/h<br>Vitesse <b style="color:#ffd84a">' + gr + '</b> / 6 <span style="color:#9aa">(E + / Q -)</span><br>Limite ' + lim + (P.car.hp < 35 ? '<br><span style="color:#ff8a4a">Voiture endommagée</span>' : '') + '<br><span style="color:#9aa">H flashers - L phares - Espace sortir</span>';
 }
 Cars.toggle = k => { if (!P.car) return; P.car[k] = !P.car[k]; U.sfx('click'); };
 Cars.enter = e => {
   if (!S.car) return;
   if (!licOk()) UI.toast(S.lic && S.lic.pass ? 'Ton permis a expiré ! Conduire sans permis = prison longue.' : 'Tu n\'as pas de permis ! Si la police te voit, c\'est la prison.', 'err');
   const sp = spec(S.car);
-  P.car = { model: S.car.model, color: S.car.color, wing: (S.car.up || {}).wing | 0, len: MODELS[S.car.model].len, ang: e.ang || 0, vx: 0, vy: 0, hp: S.car.hp == null ? sp.hp : S.car.hp, lights: S.time / 60 > 19 || S.time / 60 < 6, haz: false };
+  P.car = { model: S.car.model, color: S.car.color, wing: (S.car.up || {}).wing | 0, len: MODELS[S.car.model].len, ang: e.ang || 0, vx: 0, vy: 0, hp: S.car.hp == null ? sp.hp : S.car.hp, lights: S.time / 60 > 19 || S.time / 60 < 6, haz: false, gear: 1 };
   P.x = e.x; P.y = e.y; C.cur.ents = C.cur.ents.filter(x => x !== e);
   C.pets = []; P.run = false; P.moving = false; U.sfx('door');
-  UI.toast('Au volant : flèches/ZQSD, Maj = frein à main (drift).', 'ok');
+  UI.toast('Boîte manuelle : E monte, Q descend (6 vitesses). Maj = frein à main. Espace = sortir.', 'ok');
 };
 Cars.enterPolice = e => {
   if (!licOk()) { UI.toast('Il faut un permis valide pour conduire la voiture de patrouille.', 'err'); return; }
-  P.car = { model: 'patrouille', police: true, color: '#1b2a52', wing: 0, len: 25, ang: e.ang || 0, vx: 0, vy: 0, hp: e.hp || 220, lights: S.time / 60 > 19 || S.time / 60 < 6, haz: false, siren: false, pass: [] };
+  P.car = { model: 'patrouille', police: true, color: '#1b2a52', wing: 0, len: 25, ang: e.ang || 0, vx: 0, vy: 0, hp: e.hp || 220, lights: S.time / 60 > 19 || S.time / 60 < 6, haz: false, siren: false, pass: [], gear: 1 };
   P.x = e.x; P.y = e.y; C.cur.ents = C.cur.ents.filter(x => x !== e); C.pets = []; P.run = false; P.moving = false; U.sfx('door');
   UI.toast('Patrouille : K = sirène, H = flashers, L = phares.', 'ok');
 };
 Cars.exit = () => {
   const c = P.car; if (!c) return;
   if (Math.hypot(c.vx, c.vy) / KMH > 12) { UI.toast('Arrête-toi d\'abord pour sortir.', 'err'); return; }
+  if (c.exam) { examEnd(false, 'examen abandonné'); return; }
   if (c.police) parkPolice(c); else { S.car.hp = c.hp; S.car.map = C.cur.name; S.car.x = P.x; S.car.y = P.y; S.car.ang = c.ang; placeParked(C.cur); }
   P.car = null; P.x += Math.cos(c.ang + Math.PI / 2) * 18; P.y += Math.sin(c.ang + Math.PI / 2) * 18;
   if (W.hit(C.cur, P.x, P.y, 5, 4)) { P.x = c.police ? P.x - Math.cos(c.ang + Math.PI / 2) * 30 : S.car.x; P.y = c.police ? P.y - Math.sin(c.ang + Math.PI / 2) * 30 : S.car.y + 14; }
@@ -132,13 +141,19 @@ G.carInteract = e => { if (e.patrol) { if (S.duty) Cars.enterPolice(e); else UI.
 const oldInteract = G.interact;
 G.interact = () => { if (P.car) { Cars.exit(); return; } oldInteract(); };
 Cars.drive = (dt, keys) => {
-  const c = P.car, m = C.cur, sp = spec(c.police ? { model: 'patrouille' } : (S.car || { model: c.model }));
+  const c = P.car, m = C.cur, sp = spec(c.police ? { model: 'patrouille' } : c.exam ? { model: 'citadine' } : (S.car || { model: c.model }));
   const up = keys.up, down = keys.down, hb = keys.run;
   let steer = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
   const maxV = (c.hp <= 15 ? 35 : sp.kmh) * KMH, fx = Math.cos(c.ang), fy = Math.sin(c.ang);
   let sf = c.vx * fx + c.vy * fy, sl = -c.vx * fy + c.vy * fx;
   c.braking = false;
-  if (up) sf = Math.min(maxV, sf + sp.acc * dt * (sf < 0 ? 2.5 : 1));
+  const g = c.gear || (c.gear = 1), gcap = maxV * GCAP[g - 1];
+  if (up) {
+    if (sf < 0) sf += sp.acc * dt * 2.5;
+    else if (sf < gcap) sf = Math.min(gcap, sf + sp.acc * GACC[g - 1] * (g > 2 ? Math.max(0.3, Math.min(1, sf / (gcap * 0.3))) : 1) * dt);
+  }
+  if (sf > gcap + 1) sf = Math.max(gcap, sf - sp.acc * (up ? 0.7 : 1.1) * dt); // frein moteur
+  if (up) { /* accélération déjà gérée */ }
   else if (down) { if (sf > 6) { sf -= sp.acc * 1.8 * dt; c.braking = true; } else sf = Math.max(-maxV * 0.35, sf - sp.acc * 0.6 * dt); }
   else sf *= Math.max(0, 1 - 0.7 * dt);
   if (hb) { sf *= Math.max(0, 1 - 1.2 * dt); c.braking = true; }
@@ -152,7 +167,7 @@ Cars.drive = (dt, keys) => {
   if (!W.hit(m, nx, P.y, hw, hh)) P.x = nx; else { hit = true; c.vx *= -0.25; c.vy *= 0.6; }
   if (!W.hit(m, P.x, ny, hw, hh)) P.y = ny; else { hit = true; c.vy *= -0.25; c.vx *= 0.6; }
   const spd = Math.hypot(c.vx, c.vy);
-  if (hit && spd > 20 && C.now - lastHit > 0.3) { lastHit = C.now; const imp = spd / KMH; U.sfx('err'); if (imp > 25) { c.hp = Math.max(0, c.hp - (imp - 20) * 0.35); G.floater(P.x, P.y - 10, 'Choc !', '#ffb060'); if (imp > 70) { S.hp = Math.max(0, S.hp - (imp - 70) * 0.25); } } }
+  if (hit && spd > 20 && C.now - lastHit > 0.3) { lastHit = C.now; if (c.exam) examFault('Choc contre un obstacle'); const imp = spd / KMH; U.sfx('err'); if (imp > 25) { c.hp = Math.max(0, c.hp - (imp - 20) * 0.35); G.floater(P.x, P.y - 10, 'Choc !', '#ffb060'); if (imp > 70) { S.hp = Math.max(0, S.hp - (imp - 70) * 0.25); } } }
   P.dir = Math.abs(Math.cos(c.ang)) > Math.abs(Math.sin(c.ang)) ? (Math.cos(c.ang) > 0 ? 'right' : 'left') : (Math.sin(c.ang) > 0 ? 'down' : 'up');
   P.dirx = nfx; P.diry = nfy; P.moving = false; P.anim = 0;
   collide(c, dt);
@@ -162,7 +177,7 @@ function collide(c, dt) {
   const m = C.cur, spd = Math.hypot(c.vx, c.vy), kmh = spd / KMH;
   for (const e of m.ents) {
     if (e.kind === 'npc' && e.dying == null && !e.wait && Math.hypot(e.x - P.x, e.y - P.y) < 11 && kmh > 18 && !(e.stun > 0)) {
-      e.hp = (e.hp == null ? 40 : e.hp) - (25 + kmh * 0.6); e.stun = 8; G.crimeDone && G.crimeDone(); G.addWanted(2); G.floater(e.x, e.y - 20, 'Renversé !', '#ff8a8a');
+      e.hp = (e.hp == null ? 40 : e.hp) - (25 + kmh * 0.6); e.stun = 8; if (c.exam) { examEnd(false, 'tu as renversé un piéton'); return; } G.crimeDone && G.crimeDone(); G.addWanted(2); G.floater(e.x, e.y - 20, 'Renversé !', '#ff8a8a');
       if (e.hp <= 0) G.killNpc(e); c.vx *= 0.6; c.vy *= 0.6; U.sfx('err');
     }
     if (e.kind === 'car' && !e.owner) {
@@ -173,8 +188,8 @@ function collide(c, dt) {
         P.x -= nx * (15 - d) * 0.5; P.y -= ny * (15 - d) * 0.5; e.x += nx * (15 - d) * 0.5; e.y += ny * (15 - d) * 0.5;
         c.vx = c.vx * 0.5 - nx * 20; c.vy = c.vy * 0.5 - ny * 20;
         if (C.now - lastHit > 0.4) {
-          lastHit = C.now; U.sfx('err');
-          if (rel > 15) { c.hp = Math.max(0, c.hp - rel * 0.3); if (!e.cop) { e.crash = true; e.crashT = 25; e.vx = e.vy = 0; if (!e.cop) { G.addWanted(1); G.crimeDone && G.crimeDone(); UI.toast('Accident ! Délit de fuite ?', 'err'); } } else { e.hp = (e.hp || 100) - rel * 0.5; } if (rel > 60) S.hp = Math.max(0, S.hp - (rel - 60) * 0.3); G.floater(P.x, P.y - 10, 'Collision !', '#ffb060'); }
+          lastHit = C.now; U.sfx('err'); if (c.exam) { examFault('Collision avec un véhicule'); }
+          if (rel > 15 && !c.exam) { c.hp = Math.max(0, c.hp - rel * 0.3); if (!e.cop) { e.crash = true; e.crashT = 25; e.vx = e.vy = 0; if (!e.cop) { G.addWanted(1); G.crimeDone && G.crimeDone(); UI.toast('Accident ! Délit de fuite ?', 'err'); } } else { e.hp = (e.hp || 100) - rel * 0.5; } if (rel > 60) S.hp = Math.max(0, S.hp - (rel - 60) * 0.3); G.floater(P.x, P.y - 10, 'Collision !', '#ffb060'); }
         }
       }
     }
@@ -186,6 +201,7 @@ function highwayLinks(c) {
   if (m.name === 'world') {
     const ty = Math.floor((P.y - 1) / T);
     if (P.x > (m.w - 3) * T && (ty === 46 || ty === 47)) { c.ang = 0; c.vx = Math.abs(c.vx) + 20; c.vy = 0; G.go('autoroute', 4 * T, 8.5 * T + 6, 'right'); }
+    else if (m.hwy && ty >= m.hwy.y0 && C.now > hwCool) { const gi = hwNear(P.x, m.w); hwCool = C.now + 2.5; c.ang = 0; c.vx = Math.abs(c.vx) + 20; c.vy = 0; c.vx = Math.max(c.vx, 60); G.go('autoroute', HAX[gi] * T, 8.5 * T + 6, 'right'); }
     else if (P.x < 3 * T && (ty === 46 || ty === 47)) { c.ang = Math.PI; c.vx = -Math.abs(c.vx) - 20; c.vy = 0; G.go('autoroute', (HW - 5) * T, 5.5 * T + 6, 'left'); }
   } else if (m.hw) {
     if (P.x < 2 * T) { c.ang = Math.PI; c.vx = -Math.abs(c.vx); c.vy = 0; G.go('world', (W.get('world').w - 4) * T, 46 * T + 8, 'left'); }
@@ -250,7 +266,7 @@ function trafficStep(m, dt) {
 }
 // excès de vitesse -> poursuite
 function violations(dt) {
-  const c = P.car; if (!c || c.police) { speedTimer = 0; return; }
+  const c = P.car; if (!c || c.police || c.exam) { speedTimer = 0; return; }
   const kmh = Math.hypot(c.vx, c.vy) / KMH, lim = limitHere();
   if (kmh > lim + 15) { speedTimer += dt; if (speedTimer > 4) { speedTimer = 0; const p = kmh > lim + 40 ? 0.75 : 0.4; if (Math.random() < p && S.wanted < 3) { G.addWanted(kmh > lim + 40 ? 2 : 1); UI.toast('Excès de vitesse ! ' + Math.round(kmh) + ' km/h pour ' + lim + '.', 'err'); } } } else speedTimer = Math.max(0, speedTimer - dt);
   if (!licOk()) {
@@ -303,10 +319,13 @@ L.update = dt => {
   if (C.mode !== 'play') return;
   hud();
   const m = C.cur; if (!m || !m.outdoor || UI.isModal()) return;
-  if (!P.car && C.fade.dir === 0) { // accès à pied à l'autoroute
-    if (m.name === 'world' && m.hwy) { const ty = Math.floor(P.y / T), tx = Math.floor(P.x / T); const gi = m.hwy.gates.indexOf(m.hwy.gates.find(g => tx >= g && tx <= g + 1)); if (ty >= m.hwy.y0 && gi >= 0) { G.go('autoroute', HAX[gi] * T + 8, 10 * T + 2, 'up'); UI.toast('Autoroute : attention aux voitures !', 'err'); } }
-    else if (m.hw) { const ty = Math.floor(P.y / T), tx = Math.floor(P.x / T); const gi = HAX.findIndex(g => tx >= g && tx <= g + 1); if (ty >= 11 && gi >= 0) { const w = W.get('world'); G.go('world', (w.hwy.gates[gi] + 1) * T, (w.hwy.y0 - 2) * T, 'up'); } }
+  if (!P.car && C.fade.dir === 0 && C.now > hwCool) { // accès à pied à l'autoroute (toute la bande sud)
+    const ty = Math.floor(P.y / T), tx = Math.floor(P.x / T);
+    if (m.name === 'world' && m.hwy) { if (ty >= m.hwy.y0) { const gi = hwNear(P.x, m.w); hwCool = C.now + 2.5; G.go('autoroute', HAX[gi] * T + 8, 10 * T + 2, 'up'); UI.toast('Autoroute : attention aux voitures !', 'err'); } }
+    else if (m.hw) { const gi = HAX.findIndex(g => tx >= g && tx <= g + 1); if (ty >= 11 && gi >= 0) { const w = W.get('world'); hwCool = C.now + 2.5; G.go('world', w.hwy.gates[gi] * T + 16, (w.hwy.y0 - 2) * T, 'up'); } }
   }
+  if (EX && P.car && P.car.exam) examStep(dt);
+  if (P.car && P.car.siren && m.outdoor) pedsClear(m, dt);
   if (m.traffic) trafficStep(m, dt);
   if (P.car) { violations(dt); copCars(dt); if (P.car && P.car.hp <= 0 && Math.hypot(P.car.vx, P.car.vy) < 8) UI.toast('Ta voiture est en panne : fais-la réparer au garage.', 'err'); }
   else if (m.ents.some(e => e.cop)) copCars(dt);
@@ -329,7 +348,9 @@ const MENUS = {
     const l = S.lic;
     const ch = [];
     if (!l.theory) ch.push({ label: 'Examen du code (40 $)', fn: () => { if (S.money < 40) { UI.toast('Pas assez d\'argent.', 'err'); return; } S.money -= 40; L.games.quiz({ title: 'Code de la route', n: 4, qs: ROADQ, done: (ok, n) => { if (ok >= 3) { l.theory = true; UI.banner('Code obtenu !', ok + ' / ' + n); U.sfx('win'); } else UI.toast('Échec (' + ok + ' / ' + n + '). Réessaie.', 'err'); } }); } });
-    else if (!l.pass) ch.push({ label: 'Examen pratique (80 $)', fn: () => { if (S.money < 80) { UI.toast('Pas assez d\'argent.', 'err'); return; } S.money -= 80; L.games.reflex({ title: 'Examen de conduite', done: ok => { if (ok >= 6) { l.pass = true; l.exp = S.abs + 7 * 1440; UI.banner('Permis obtenu !', 'Valable 7 jours'); U.sfx('win'); } else UI.toast('Échec (' + ok + ' / 8). Réessaie.', 'err'); } }); } });
+    else if (!l.pass) ch.push({ label: 'Examen pratique (80 $)', fn: () => { if (S.money < 80) { UI.toast('Pas assez d\'argent.', 'err'); return; }
+      UI.say('Bernard', ['Voici la voiture-école. Suis les cercles jaunes dans le village, reste sous 50 km/h, ne touche à rien.', 'Boîte manuelle : E monte une vitesse, Q en descend une. 3 fautes ou 5 minutes = échec. Arrête-toi devant l\'école à la fin.'],
+        [{ label: 'Commencer (80 $)', fn: () => { if (S.money < 80) { UI.toast('Pas assez d\'argent.', 'err'); return; } S.money -= 80; startExam(); } }, { label: 'Plus tard' }]); } });
     else ch.push({ label: 'Renouveler le permis (40 $)', fn: () => { if (S.money < 40) { UI.toast('Pas assez d\'argent.', 'err'); return; } S.money -= 40; l.exp = Math.max(S.abs, l.exp) + 7 * 1440; UI.toast('Permis renouvelé pour 7 jours.', 'ok'); U.sfx('cash'); } });
     ch.push({ label: 'Plus tard' });
     UI.say('Bernard', [fmtLic() + '.', 'Le permis expire chaque semaine : il faut le renouveler ici.'], ch);
@@ -340,20 +361,128 @@ const MENUS = {
 G.xMenus = MENUS;
 const oldLZ0 = G.lifeZone;
 G.lifeZone = z => { if (z.action && z.action.startsWith('x:') && MENUS[z.action]) { MENUS[z.action].fn(); return; } oldLZ0(z); };
+
+
+/* piétons qui se tassent quand la sirène retentit */
+function offRoad(m, x, y) { const tx = Math.floor(x / T), ty = Math.floor(y / T); return m.ground[ty * m.w + tx] !== RD; }
+function pedsClear(m, dt) {
+  for (const e of m.ents) {
+    if (e.kind !== 'npc' || e.sleeping || e.dying != null || e.sus || e.cuffed || Math.hypot(e.x - P.x, e.y - P.y) > 200) continue;
+    if (offRoad(m, e.x, e.y)) continue;
+    let tgt = null, bd = 1e9;
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+      const x = e.x + dx * T, y = e.y + dy * T; if (x < 8 || y < 8 || x > m.w * T - 8 || y > m.h * T - 8 || !offRoad(m, x, y)) continue;
+      const tx = Math.floor(x / T), ty = Math.floor(y / T); if (m.solid[ty * m.w + tx]) continue;
+      const d = dx * dx + dy * dy; if (d < bd) { bd = d; tgt = { x: tx * T + 8, y: ty * T + 8 }; }
+    }
+    if (!tgt) continue;
+    const dx = tgt.x - e.x, dy = tgt.y - e.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, 70 * dt);
+    const nx = e.x + dx / d * st, ny = e.y + dy / d * st;
+    if (!W.hit(m, nx, e.y, 4, 3)) e.x = nx; if (!W.hit(m, e.x, ny, 4, 3)) e.y = ny;
+    e.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); e.moving = true;
+    if (e.wait) e.wait = 0;
+  }
+}
+
+/* ---------------- téléphone : appeler sa voiture ---------------- */
+Cars.phone = () => {
+  const S2 = S;
+  UI.modal({ title: 'Téléphone', cls: 'wide',
+    render: () => '<div class="list"><div class="row"><div class="rn"><b>Appeler ma voiture</b><small>' + (S2.car ? MODELS[S2.car.model].n + ' - elle viendra sur la route la plus proche.' : 'Tu n\'as pas de voiture.') + '</small></div>' + (S2.car ? '<button class="go" data-a="call">Appeler</button>' : '') + '</div></div>',
+    onAction: a => { if (a === 'call') { if (callCar()) UI.closeModal(); } } });
+};
+function callCar() {
+  const m = C.cur;
+  if (!S.car) { UI.toast('Tu n\'as pas de voiture.', 'err'); return false; }
+  if (P.car) { UI.toast('Tu es déjà au volant.', 'err'); return false; }
+  if (!m || !m.outdoor) { UI.toast('Pas de réseau ici : sors dehors pour appeler ta voiture.', 'err'); return false; }
+  const free2 = (x, y) => !m.ents.some(e => e.kind === 'car' && Math.hypot(e.x - x, e.y - y) < 26);
+  let best = null;
+  if (m.hw) { for (let dx = 0; dx < 400 && !best; dx += 16) for (const sg of [1, -1]) { const x = Math.max(3 * T, Math.min((HW - 3) * T, P.x + sg * dx)); if (free2(x, 10 * T + 8)) { best = { x, y: 10 * T + 8, ang: 0 }; break; } } }
+  else {
+    const tx0 = Math.floor(P.x / T), ty0 = Math.floor(P.y / T); let bd = 1e9;
+    for (let r = 0; r <= 45; r++) {
+      for (let ty = ty0 - r; ty <= ty0 + r; ty++) for (let tx = tx0 - r; tx <= tx0 + r; tx++) {
+        if (Math.max(Math.abs(tx - tx0), Math.abs(ty - ty0)) !== r || tx < 1 || ty < 1 || tx >= m.w - 1 || ty >= m.h - 1) continue;
+        const i = ty * m.w + tx; if (m.ground[i] !== RD || m.solid[i]) continue;
+        const x = tx * T + 8, y = ty * T + 8, d = Math.hypot(x - P.x, y - P.y); if (d < 34 || d >= bd || !free2(x, y)) continue;
+        const horiz = m.ground[i - 1] === RD || m.ground[i + 1] === RD; bd = d; best = { x, y, ang: horiz ? 0 : Math.PI / 2 };
+      }
+      if (best && r > 0) break;
+    }
+  }
+  if (!best) { UI.toast('Aucune route à proximité.', 'err'); return false; }
+  for (const mm of Object.values(W.maps)) mm.ents = mm.ents.filter(e => !e.owner);
+  S.car.map = m.name; S.car.x = best.x; S.car.y = best.y; S.car.ang = best.ang;
+  placeParked(m); U.sfx('cash'); UI.banner('Ta voiture arrive', 'Elle t\'attend sur la route la plus proche.');
+  return true;
+}
+
+/* ---------------- examen de conduite physique ---------------- */
+const EXCP = [[50, 101], [63, 101], [63, 107], [63, 113], [47, 113], [31, 113], [31, 107], [31, 101], [38, 101]], EXAM_T = 300;
+let EX = null, exLast = -9;
+function startExam() {
+  const w = W.get('world'), d = w.doorsById && w.doorsById.autoecole; if (!d) return;
+  EX = { i: 0, faults: [], t0: 0, fastT: 0, started: false };
+  G.go('world', d.x * T + 8, (d.y + 2) * T + 8, 'right');
+  const cb = C.fade.cb;
+  C.fade.cb = () => {
+    cb();
+    P.x = d.x * T + 8; P.y = (d.y + 2) * T + 4; C.pets = []; P.run = false; P.moving = false;
+    P.car = { model: 'citadine', exam: true, color: '#f2f2f2', wing: 0, len: 20, ang: 0, vx: 0, vy: 0, hp: 100, lights: false, haz: false, gear: 1 };
+    EX.t0 = C.now; EX.started = true;
+    UI.toast('Examen : suis les cercles jaunes. E / Q = vitesses.', 'ok');
+  };
+}
+function examFault(why) {
+  if (!EX || C.now - exLast < 2) return; exLast = C.now;
+  EX.faults.push(why); U.sfx('err'); UI.toast('Faute ' + EX.faults.length + ' / 3 : ' + why, 'err');
+  if (EX.faults.length >= 3) examEnd(false, '3 fautes');
+}
+function examEnd(ok, why) {
+  if (!EX) return; EX = null;
+  const w = W.get('world'), d = w.doorsById && w.doorsById.autoecole;
+  P.car = null; if (C.cur.name === 'world' && d) { P.x = d.x * T + 8; P.y = (d.y + 1) * T + 8; }
+  if (ok) { S.lic.pass = true; S.lic.exp = S.abs + 7 * 1440; UI.banner('Permis obtenu !', 'Valable 7 jours'); U.sfx('win'); }
+  else UI.toast('Examen raté : ' + why + '. Tu peux le repasser (80 $).', 'err');
+  if (G.syncPets) { G.syncPets(); G.placePets && G.placePets(); }
+}
+function examStep(dt) {
+  if (!EX.started) return;
+  const c = P.car, kmh = Math.hypot(c.vx, c.vy) / KMH;
+  if (C.cur.name !== 'world') { examEnd(false, 'tu as quitté le parcours'); return; }
+  if (C.now - EX.t0 > EXAM_T) { examEnd(false, 'temps écoulé'); return; }
+  if (kmh > 55) { EX.fastT += dt; if (EX.fastT > 1.2) { EX.fastT = -2; examFault('Excès de vitesse'); } } else if (EX.fastT > 0) EX.fastT = 0;
+  const cp = EXCP[EX.i], d = Math.hypot(cp[0] * T - P.x, cp[1] * T - P.y), last = EX.i === EXCP.length - 1;
+  if (d < (last ? 22 : 30) && (!last || kmh < 8)) { EX.i++; U.sfx('click'); if (EX.i >= EXCP.length) examEnd(true); }
+}
+Cars.drawWorld = (ctx, camX, camY) => {
+  if (!EX || !EX.started || C.cur.name !== 'world') return;
+  const p = 0.5 + 0.5 * Math.sin(C.now * 4);
+  ctx.save();
+  for (let k = EX.i; k < Math.min(EXCP.length, EX.i + 3); k++) {
+    const x = EXCP[k][0] * T - camX, y = EXCP[k][1] * T - camY, cur = k === EX.i, last = k === EXCP.length - 1;
+    ctx.globalAlpha = cur ? 1 : 0.35; ctx.fillStyle = last ? 'rgba(80,255,120,' + (0.18 + 0.12 * p) + ')' : 'rgba(255,220,0,' + (0.18 + 0.12 * p) + ')'; ctx.strokeStyle = last ? '#50ff78' : '#ffd400'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.arc(x, y, 24 + (cur ? 3 * p : 0), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  const cp = EXCP[EX.i], dx = cp[0] * T - P.x, dy = cp[1] * T - P.y, d = Math.hypot(dx, dy);
+  if (d > 70) { const a = Math.atan2(dy, dx), ax = P.x - camX + Math.cos(a) * 44, ay = P.y - camY + Math.sin(a) * 44; ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.fillStyle = '#ffd400'; ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.moveTo(ax + Math.cos(a) * 9, ay + Math.sin(a) * 9); ctx.lineTo(ax + Math.cos(a + 2.5) * 8, ay + Math.sin(a + 2.5) * 8); ctx.lineTo(ax + Math.cos(a - 2.5) * 8, ay + Math.sin(a - 2.5) * 8); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  ctx.restore();
+};
 function dealer() {
   let color = COLORS[0];
   UI.modal({ title: 'Concessionnaire', cls: 'wide',
     render: () => {
       let h = '<div class="money">Argent : <b>' + money(S.money) + '</b>' + (S.car ? ' - Reprise : ' + money(Math.round(MODELS[S.car.model].price * 0.5)) : '') + '</div><div class="sw">' + COLORS.map(c => '<button class="c' + (color === c ? ' sel' : '') + '" style="background:' + c + '" data-a="col" data-v="' + c + '"></button>').join('') + '</div><div class="list">';
-      for (const id of Object.keys(MODELS)) { const m = MODELS[id]; h += '<div class="row"><div class="rn"><b>' + m.n + '</b><small>Vitesse max ' + m.kmh + ' km/h - Accélération ' + m.acc + ' - Adhérence ' + m.grip + ' - Solidité ' + m.hp + '</small></div><div class="rp">' + money(m.price) + '</div><button class="go" data-a="buy" data-i="' + id + '">Acheter</button></div>'; }
+      for (const id of Object.keys(MODELS)) { if (id === 'patrouille') continue; const m = MODELS[id]; h += '<div class="row"><div class="rn"><b>' + m.n + '</b><small>Vitesse max ' + m.kmh + ' km/h - Accélération ' + m.acc + ' - Adhérence ' + m.grip + ' - Solidité ' + m.hp + '</small></div><div class="rp">' + money(m.price) + '</div><button class="go" data-a="buy" data-i="' + id + '">Acheter</button></div>'; }
       return h + '</div>';
     },
     onAction: (a, b, m) => {
       if (a === 'col') color = b.dataset.v;
-      else if (a === 'buy') { const mo = MODELS[b.dataset.i], trade = S.car ? Math.round(MODELS[S.car.model].price * 0.5) : 0; if (S.money + trade < mo.price) { UI.toast('Pas assez d\'argent.', 'err'); U.sfx('err'); return; }
+      else if (a === 'buy' && b.dataset.i !== 'patrouille') { const mo = MODELS[b.dataset.i], trade = S.car ? Math.round(MODELS[S.car.model].price * 0.5) : 0; if (S.money + trade < mo.price) { UI.toast('Pas assez d\'argent.', 'err'); U.sfx('err'); return; }
         S.money += trade - mo.price; const f = G.walletPos || null; S.car = { model: b.dataset.i, color, up: {}, drift: false, hp: mo.hp, map: 'world', x: 62 * T, y: 81 * T + 6, ang: 0 };
-        const w = W.get('world'), d = w.doorsById && w.doorsById.concession; if (d) { S.car.x = d.x * T + 16; S.car.y = 82 * T + 4; S.car.ang = 0; }
-        UI.closeModal(); UI.banner('Nouvelle voiture !', mo.n + ' garée devant le concessionnaire'); U.sfx('win'); const wm = W.get('world'); placeParked(wm); return; }
+        const w = W.get('world'), d = w.doorsById && w.doorsById.concession; if (d) { S.car.x = d.x * T + 8; S.car.y = (d.y + 2) * T + 8; S.car.ang = 0; }
+        UI.closeModal(); UI.banner('Nouvelle voiture !', mo.n + ' garée devant le concessionnaire. Elle est à toi pour de bon : achète un téléphone pour l\'appeler.'); U.sfx('win'); const wm = W.get('world'); placeParked(wm); return; }
       m.refresh();
     } });
 }
