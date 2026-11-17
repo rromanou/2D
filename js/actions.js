@@ -150,7 +150,7 @@ Game.updateTarget = () => {
   const m = C.cur; let best = null;
   const consider = c => { if (!best || c.d < best.d) best = c; };
   for (const e of m.ents) {
-    if (e.kind === 'deco' || e.hidden) continue;
+    if (e.kind === 'deco' || e.hidden || e.sleeping) continue;
     const d = Math.hypot(P.x - e.x, P.y - e.y), reach = e.kind === 'static' ? 34 : e.kind === 'animal' ? 22 : 26;
     if (d < reach) consider({ t: 'ent', e, d: e.kind === 'animal' ? d + 40 : d });
   }
