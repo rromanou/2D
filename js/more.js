@@ -239,6 +239,13 @@ function famTick(dt) {
   }
 }
 const spotIn = (m, rnd) => { rnd = rnd || Math.random; for (let k = 0; k < 80; k++) { const tx = 2 + Math.floor(rnd() * (m.w - 4)), ty = 3 + Math.floor(rnd() * (m.h - 5)); if (!m.solid[ty * m.w + tx]) return { x: tx, y: ty }; } return { x: 4, y: 4 }; };
+const free = (m, x, y, near) => { // position libre (sans collision) la plus proche
+  for (let r = 0; r <= 14; r++) for (let k = 0; k < (r ? 16 : 1); k++) {
+    const a = k / 16 * Math.PI * 2, px = x + Math.cos(a) * r * 6, py = y + Math.sin(a) * r * 6;
+    if (px > 12 && py > 12 && px < m.w * T - 12 && py < m.h * T - 6 && !W.hit(m, px, py, 5, 4)) return { x: px, y: py };
+  }
+  const t = spotIn(m); return { x: t.x * T + 8, y: t.y * T + 12 };
+};
 const homeFront = () => { const w = W.get('world'), h = w && w.houses.find(x => x.home); return h ? { x: h.front.x, y: h.front.y } : { x: 62 * T, y: 52 * T }; };
 const mkRoleEnt = (m, role, nm, ap, female, extra, at) => {
   const e = E.spawnWander(m, 0, 0, 3, Math.random);
@@ -289,6 +296,7 @@ L.switchTo = role => {
   posOv[old] = { x: ox, y: oy }; delete posOv[role];
   S.role = role; S.name = roleName(role); S.ap = roleAp(role); S.pscale = role.startsWith('kid:') ? X.KSCALE[roleStage(role)] : 1;
   P.x = t.x; P.y = t.y;
+  if (t.sleeping || W.hit(m, P.x, P.y, 5, 4)) { const fp = free(m, t.x, t.y + 18); P.x = fp.x; P.y = fp.y; }
   L.posOv = posOv; L.enter('home');
   if (G.syncPets) { G.syncPets(); G.placePets && G.placePets(); }
   U.sfx('win'); UI.toast('Tu contrôles maintenant ' + S.name + '.', 'ok'); famDirty = true; UI.hotbarDirty && UI.hotbarDirty();
@@ -461,15 +469,28 @@ function bedSlots() {
   const out = [];
   S.furn.forEach((f, i) => {
     const F = D.FURN[f.id]; if (!F) return;
-    if (F.fn === 'sleep') { const d = (f.r | 0) & 1 ? { w: F.h, h: F.w } : { w: F.w, h: F.h }, n = f.id === 'bedlux' ? 2 : 1; for (let k = 0; k < n; k++) out.push({ bed: i, x: (f.x + d.w / 2) * T, y: (f.y + (n === 2 ? k + 0.5 : d.h / 2)) * T + 6 }); }
-    else if (F.k === 'crib') out.push({ bed: i, crib: true, x: (f.x + 0.5) * T, y: (f.y + 0.5) * T + 6 });
+    const r = (f.r | 0) % 4;
+    if (F.fn === 'sleep') {
+      const n = f.id === 'bedlux' ? 2 : 1, cx = f.x + 1, cy = f.y + 1; // lit 2x2 : oreillers côté « haut » avant rotation
+      for (let k = 0; k < n; k++) {
+        const a = n === 2 ? (k ? 0.5 : -0.5) : 0, bb = 0.15;
+        const o = [[a, bb], [-bb, a], [-a, -bb], [bb, -a]][r];
+        out.push({ bed: i, n, x: (cx + o[0]) * T, y: (cy + o[1]) * T + (r === 0 ? 10 : 8), ang: r * Math.PI / 2, col: (F.o || {}).col });
+      }
+    } else if (F.k === 'crib') out.push({ bed: i, n: 1, crib: true, x: (f.x + 0.5) * T, y: (f.y + 0.5) * T + 6, ang: Math.PI / 2 });
   });
   return out;
 }
 function sleepPos() {
   const slots = bedSlots(), used = new Set(), res = {};
   const take = (r, pred) => { const i = slots.findIndex((s, j) => !used.has(j) && pred(s)); if (i < 0) return false; used.add(i); res[r] = slots[i]; return true; };
-  famRoles().forEach(r => { const pref = S.beds && S.beds[r]; if (pref != null && take(r, s => s.bed === pref)) return; if (roleStage(r) === 0 && take(r, s => s.crib)) return; take(r, s => !s.crib) || take(r, s => true); });
+  const roles = famRoles(), couple = S.partner ? ['main', 'partner'] : [];
+  roles.forEach(r => { const pref = S.beds && S.beds[r]; if (pref != null && roleStage(r) > 0 && slots.some(s => s.bed === pref && !s.crib)) take(r, s => s.bed === pref); else if (pref != null && roleStage(r) === 0) take(r, s => s.bed === pref); });
+  if (couple.length && !couple.some(r => res[r])) {
+    const bi = slots.findIndex(s => s.n === 2 && !s.crib && slots.filter(t => t.bed === s.bed).length === 2);
+    if (bi >= 0) couple.forEach(r => take(r, s => s.bed === slots[bi].bed));
+  }
+  roles.forEach(r => { if (res[r]) return; const st = roleStage(r); if (st === 0 && take(r, s => s.crib)) return; take(r, s => !s.crib); });
   return res;
 }
 L.bedAssign = () => {
@@ -514,8 +535,8 @@ function routine(force) {
       continue;
     }
     if (inHome && !e.goto) {
-      if (night) { const s = pos[r]; if (!e.sleeping || force) { if (s) { e.x = s.x; e.y = s.y; } else { const t = spotIn(hm); e.x = t.x * T + 8; e.y = t.y * T + 12; } e.sleeping = true; e.wait = true; e.anim = 0; } }
-      else if (e.sleeping) { e.sleeping = false; if (!e.mainChar) e.wait = false; const t = spotIn(hm); e.x = t.x * T + 8; e.y = t.y * T + 12; }
+      if (night) { const s = pos[r]; if (!e.sleeping || force) { if (s) { e.x = s.x; e.y = s.y; e.sleepAng = s.ang; e.blanket = s.col; } else { const q = spotIn(hm), t = free(hm, q.x * T + 8, q.y * T + 12); e.x = t.x; e.y = t.y; e.sleepAng = Math.PI / 2; } e.sleeping = true; e.wait = true; e.anim = 0; e.goto = null; } }
+      else if (e.sleeping) { e.sleeping = false; e.sleepAng = null; if (!e.mainChar) e.wait = false; const t = free(hm, e.x, e.y + 14, true); e.x = t.x; e.y = t.y; e.state = 'idle'; e.t = 1; }
     }
   }
 }
@@ -704,6 +725,31 @@ L.update = dt => {
   dying(dt);
   if ((botT += dt) > 2.5) { botT = 0; botFlow(); }
   if ((tgtT += dt) > 2) { tgtT = 0; ensureTargets(); }
+};
+
+/* ---------- se débloquer ---------- */
+const stuckHit = (m, x, y) => W.hit(m, x, y, 5, 4);
+G.unstuck = (quiet) => {
+  if (P.car && RG.Cars) RG.Cars.forceExit();
+  try { while (UI.isModal && UI.isModal()) UI.closeModal(); UI.closeDialog && UI.closeDialog(); } catch (e) { }
+  C.fade = { a: 0, dir: 0 }; C.mini = null; C.place = null; C.fishing = null; C.mode = 'play'; P.stun = 0; P.punchT = 0; P.moving = false; P.run = false;
+  const m = C.cur; if (!m) return;
+  if (stuckHit(m, P.x, P.y) || !quiet) { const f = free(m, P.x, P.y); if (stuckHit(m, P.x, P.y)) { P.x = f.x; P.y = f.y; } }
+  const hm = W.get('home');
+  if (hm) for (const e of hm.ents) if (e.role || e.kid || e.partner || e.mainChar) { if (!e.sleeping && stuckHit(hm, e.x, e.y)) { const f = free(hm, e.x, e.y); e.x = f.x; e.y = f.y; } e.goto = null; if (!e.mainChar && !e.sleeping) e.wait = false; }
+  routine(true); famDirty = true;
+  if (!quiet) UI.toast('Personnage débloqué.', 'ok');
+};
+let stkT = 0, stkN = 0;
+const oldUpd2 = L.update;
+L.update = dt => {
+  oldUpd2(dt);
+  if (C.mode !== 'play' || P.car || !C.cur) return;
+  if ((stkT += dt) > 0.4) {
+    stkT = 0; const m = C.cur;
+    if (!m.zonesBlock && stuckHit(m, P.x, P.y)) { if (++stkN >= 2) { const f = free(m, P.x, P.y); P.x = f.x; P.y = f.y; stkN = 0; } } else stkN = 0;
+    for (const e of m.ents) if ((e.role || e.guest) && !e.sleeping && !e.goto && stuckHit(m, e.x, e.y)) { const f = free(m, e.x, e.y); e.x = f.x; e.y = f.y; }
+  }
 };
 const oldInit = L.init;
 L.init = () => {
