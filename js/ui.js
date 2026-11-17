@@ -367,11 +367,12 @@ UI.avatar = (opt) => {
 UI.pause = () => {
   UI.modal({
     title: 'Pause', cls: 'pause',
-    render: () => '<div class="menu"><button data-a="resume">Reprendre</button><button data-a="save">Sauvegarder</button><button data-a="snd">Son : ' + (U.sound ? 'activé' : 'coupé') + '</button><button data-a="help">Commandes</button><button data-a="reset" class="warn">Nouvelle partie</button></div>',
+    render: () => '<div class="menu"><button data-a="resume">Reprendre</button><button data-a="save">Sauvegarder</button><button data-a="snd">Son : ' + (U.sound ? 'activé' : 'coupé') + '</button><button data-a="unstuck">Se débloquer</button><button data-a="help">Commandes</button><button data-a="reset" class="warn">Nouvelle partie</button></div>',
     onAction: (a, b, m) => {
       if (a === 'resume') UI.closeModal();
       else if (a === 'save') { RG.Game.save(true); }
       else if (a === 'snd') { U.sound = !U.sound; m.refresh(); }
+      else if (a === 'unstuck') { UI.closeModal(); RG.Game.unstuck && RG.Game.unstuck(); }
       else if (a === 'help') UI.help();
       else if (a === 'reset') { if (confirm('Effacer la sauvegarde et recommencer ?')) RG.Game.reset(); }
     }
